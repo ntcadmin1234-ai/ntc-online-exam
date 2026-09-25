@@ -1,0 +1,2963 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <!-- โหลดไลบรารี SheetJS (xlsx) สำหรับอ่านไฟล์ Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- โหลดไลบรารี Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Kanit", sans-serif;
+      color: #1e293b;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(147, 197, 253, 0.4), transparent 30%),
+        radial-gradient(circle at 90% 90%, rgba(196, 181, 253, 0.35), transparent 32%),
+        #f8fafc;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font-family: inherit;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    section {
+      animation: fadeIn 0.25s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Top Navbar */
+    .navbar {
+      height: 72px;
+      padding: 0 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .db-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #f1f5f9;
+      color: #475569;
+      transition: 0.2s;
+    }
+
+    .db-badge.connected {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #166534;
+    }
+
+    .db-badge.disconnected {
+      background: #fffbeb;
+      border-color: #fde68a;
+      color: #b45309;
+    }
+
+    .db-badge:hover {
+      transform: scale(1.02);
+      filter: brightness(0.97);
+    }
+
+    .menu-container {
+      position: relative;
+    }
+
+    .menu-icon-button,
+    .back-icon-button {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 20px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .menu-icon-button:hover,
+    .back-icon-button:hover {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 290px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 16px 36px rgba(30, 64, 175, 0.12);
+      padding: 8px;
+      overflow: hidden;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-8px) scale(0.97);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dropdown-menu.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .dropdown-item {
+      width: 100%;
+      padding: 11px 14px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .dropdown-item:hover {
+      background: #f8fafc;
+      transform: translateX(3px);
+    }
+
+    .dropdown-img-icon {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      margin-top: 2px;
+    }
+
+    .dropdown-item-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #2563eb;
+      display: block;
+    }
+
+    .dropdown-item-desc {
+      font-size: 12px;
+      color: #64748b;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* Login Pages */
+    .login-page {
+      min-height: calc(100vh - 72px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: min(100%, 480px);
+      margin: 16px auto;
+      padding: 38px 34px;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 20px 50px rgba(30, 64, 175, 0.12);
+      text-align: center;
+    }
+
+    .logo-img {
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 16px;
+      object-fit: contain;
+      display: block;
+    }
+
+    h1 {
+      margin: 0;
+      color: #0f172a;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 8px 0 24px;
+      color: #64748b;
+      font-size: 15px;
+      font-weight: 400;
+    }
+
+    /* Tabs inside Login Card */
+    .login-mode-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 22px;
+      gap: 4px;
+    }
+
+    .login-mode-tab {
+      flex: 1;
+      border: 0;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 10px;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .login-mode-tab.active {
+      background: #ffffff;
+      color: #2563eb;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      transform: translateY(-50%);
+      pointer-events: none;
+      font-size: 16px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 13px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      outline: none;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 15px;
+      transition: 0.2s ease;
+    }
+
+    .has-icon {
+      padding-left: 48px !important;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #3b82f6;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+    }
+
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #64748b;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .password-toggle:hover {
+      background: #e0f2fe;
+      color: #2563eb;
+    }
+
+    .error-message {
+      display: none;
+      margin: 10px 0 0;
+      color: #e11d48;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .primary-button,
+    .start-button,
+    .secondary-button,
+    .edit-button,
+    .btn-sync {
+      border: 0;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .primary-button, .start-button {
+      background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(59, 130, 246, 0.22);
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px;
+    }
+
+    .start-button.done {
+      background: #cbd5e1 !important;
+      color: #64748b !important;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    .start-button.no-perm {
+      background: #fecdd3 !important;
+      color: #e11d48 !important;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    .secondary-button {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 9px 16px;
+      font-size: 14px;
+    }
+
+    .btn-sync {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+
+    .btn-sync:hover {
+      background: #dcfce7;
+    }
+
+    .primary-button:hover,
+    .start-button:not(.done):not(.no-perm):hover {
+      filter: brightness(1.06);
+      transform: translateY(-2px);
+    }
+
+    .secondary-button:hover {
+      background: #bae6fd;
+    }
+
+    /* Content Layout */
+    .page-content {
+      width: min(100% - 32px, 1020px);
+      margin: 36px auto 60px;
+    }
+
+    .page-title {
+      margin: 0 0 4px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .page-subtitle {
+      margin: 0 0 22px;
+      color: #64748b;
+      font-size: 15px;
+    }
+
+    .profile-card,
+    .admin-card {
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 15px 40px rgba(30, 64, 175, 0.08);
+      margin-bottom: 24px;
+    }
+
+    .profile-header {
+      padding: 28px 36px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #ffffff;
+      background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+    }
+
+    .avatar {
+      width: 76px;
+      height: 76px;
+      display: grid;
+      place-items: center;
+      border: 3px solid rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      background: #dbeafe;
+      color: #2563eb;
+      font-size: 28px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .student-name {
+      margin: 0;
+      font-size: 23px;
+    }
+
+    .student-id {
+      margin: 4px 0 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 15px;
+    }
+
+    .profile-content,
+    .admin-card {
+      padding: 28px 36px;
+    }
+
+    .section-title {
+      margin: 0 0 16px;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .info-item {
+      padding: 14px 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    .info-label {
+      display: block;
+      margin-bottom: 4px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* Term Exam Section Cards */
+    .term-section-block {
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #ffffff;
+      padding: 20px;
+      margin-top: 18px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .term-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+
+    .term-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .exam-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .exam-box {
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      background: #eff6ff;
+    }
+
+    .exam-box h3 {
+      margin: 0 0 4px;
+      color: #1e3a8a;
+      font-size: 16px;
+    }
+
+    .exam-box p {
+      margin: 0;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    /* Status Buttons (1 & 2) Requirements from 1.txt */
+    .status-badge-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .term-badge-btn {
+      width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s ease;
+      user-select: none;
+    }
+
+    .term-badge-btn.allowed {
+      border: 2px solid #22c55e;
+      background: #f0fdf4;
+      color: #15803d;
+    }
+
+    .term-badge-btn.disallowed {
+      border: 2px solid #f43f5e;
+      background: #fff1f2;
+      color: #e11d48;
+    }
+
+    .term-badge-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .term-badge-btn.readonly {
+      cursor: default;
+    }
+    .term-badge-btn.readonly:hover {
+      transform: none;
+    }
+
+    /* Admin Nav Tabs */
+    .admin-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .admin-nav button {
+      padding: 9px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .admin-nav button:hover,
+    .admin-nav button.active {
+      border-color: #93c5fd;
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    .table-wrap {
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+
+    th {
+      color: #475569;
+      background: #f8fafc;
+      font-weight: 600;
+    }
+
+    .delete-button, .edit-button {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .delete-button {
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      color: #e11d48;
+    }
+
+    .delete-button:hover {
+      background: #ffe4e6;
+    }
+
+    .edit-button {
+      border: 1px solid #bae6fd;
+      background: #e0f2fe;
+      color: #0369a1;
+      margin-right: 4px;
+    }
+
+    .edit-button:hover {
+      background: #bae6fd;
+    }
+
+    .question-card {
+      padding: 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      background: #ffffff;
+      margin-bottom: 14px;
+    }
+
+    /* Supabase Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      width: min(100%, 560px);
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      padding: 28px 30px;
+      position: relative;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: 0;
+      font-size: 20px;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+    .modal-close:hover {
+      color: #0f172a;
+    }
+
+    /* Notification Toast */
+    #toastMessage {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      z-index: 3000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: 0.25s ease;
+      pointer-events: none;
+    }
+    #toastMessage.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 680px) {
+      .navbar {
+        padding: 0 16px;
+      }
+      .brand {
+        font-size: 16px;
+      }
+      .login-card,
+      .profile-content,
+      .admin-card {
+        padding: 22px 18px;
+      }
+      .profile-header {
+        padding: 22px 18px;
+      }
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+      .exam-box {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .start-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <div class="brand" onclick="goToStudentMenu()">
+      <img class="brand-logo" src="https://i.ibb.co/Tq2NHPvy/image.png" alt="โลโก้วิทยาลัยเทคโนโลยีนนทบุรี" />
+      <span>วิทยาลัยเทคโนโลยีนนทบุรี</span>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Badge แสดงสถานะ Supabase -->
+      <div id="dbStatusBadge" class="db-badge disconnected" onclick="openSupabaseModal()" title="คลิกเพื่อตั้งค่าการเชื่อมต่อ Supabase">
+        <span id="dbStatusDot">🟡</span>
+        <span id="dbStatusText">LocalStorage</span>
+      </div>
+
+      <div class="menu-container">
+        <button class="menu-icon-button" type="button" onclick="toggleMenu(event)" title="เมนูหลัก">
+          ☰
+        </button>
+        <div id="mainDropdown" class="dropdown-menu">
+          <button class="dropdown-item" type="button" onclick="goToStudentMenu()">
+            <img class="dropdown-img-icon" src="https://i.ibb.co/1tCwVH8Y/education.png" alt="นักศึกษา" />
+            <div>
+              <span class="dropdown-item-title">นักศึกษา</span>
+              <span class="dropdown-item-desc">เข้าสู่ระบบสอบ / ใส่รหัสนักเรียน</span>
+            </div>
+          </button>
+          <button class="dropdown-item" type="button" onclick="showAdminLogin('advisor')">
+            <img class="dropdown-img-icon" src="https://i.ibb.co/SWbq8Zq/person.png" alt="ที่ปรึกษา" />
+            <div>
+              <span class="dropdown-item-title">ที่ปรึกษา</span>
+              <span class="dropdown-item-desc">ตรวจสอบคะแนนสอบแยกห้อง/รายวิชา</span>
+            </div>
+          </button>
+          <button class="dropdown-item" type="button" onclick="showAdminLogin('admin')">
+            <img class="dropdown-img-icon" src="https://i.ibb.co/V0MFdZ54/settings.png" alt="แอดมิน" />
+            <div>
+              <span class="dropdown-item-title">แอดมิน</span>
+              <span class="dropdown-item-desc">จัดการระบบ / ข้อสอบและนักเรียน</span>
+            </div>
+          </button>
+          <hr style="border:0; border-top:1px solid #f1f5f9; margin: 4px 0;" />
+          <button class="dropdown-item" type="button" onclick="openSupabaseModal()">
+            <span style="font-size: 19px; margin-top: 1px;">⚡</span>
+            <div>
+              <span class="dropdown-item-title" style="color: #059669;">ตั้งค่า Supabase</span>
+              <span class="dropdown-item-desc">เชื่อมต่อ Cloud Database</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- หน้าเข้าสู่ระบบนักเรียน (Student Login) -->
+  <section id="loginPage" class="login-page">
+    <main class="login-card">
+      <img class="logo-img" src="https://i.ibb.co/1tCwVH8Y/education.png" alt="เข้าสู่ระบบสอบ" />
+
+      <h1>เข้าสู่ระบบสอบออนไลน์</h1>
+      <p class="subtitle">วิทยาลัยเทคโนโลยีนนทบุรี</p>
+
+      <!-- แถบเลือกวิธีเข้าสู่ระบบ (กรอกรหัส หรือ เลือกตามห้อง) -->
+      <div class="login-mode-tabs">
+        <button id="tabModeId" class="login-mode-tab active" type="button" onclick="switchLoginMode('byId')">
+          🎓 กรอกรหัสนักเรียน
+        </button>
+        <button id="tabModeList" class="login-mode-tab" type="button" onclick="switchLoginMode('byList')">
+          📋 เลือกตาม ชั้นปี/ห้อง/ชื่อ
+        </button>
+      </div>
+
+      <!-- ฟอร์มแบบที่ 1: กรอกรหัสนักเรียน -->
+      <form id="studentIdForm">
+        <label for="studentIdInput">รหัสนักเรียน</label>
+        <div class="input-wrap">
+          <span class="input-icon">🎓</span>
+          <input
+            id="studentIdInput"
+            class="has-icon"
+            type="text"
+            placeholder="กรอกรหัสนักเรียน เช่น 6601001"
+            maxlength="20"
+            autocomplete="off"
+            required
+          />
+        </div>
+        <p class="error-message" id="studentErrorMessage"></p>
+        <button class="primary-button" type="submit">
+          เข้าสู่หน้าสอบ
+        </button>
+      </form>
+
+      <!-- ฟอร์มแบบที่ 2: เลือกตาม ชั้นปี / ห้อง / รายชื่อ (ตามข้อเสนอแนะ 1.txt) -->
+      <form id="studentCascadeForm" class="hidden">
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <div style="flex: 1;">
+            <label for="selectStudentYear">ชั้นปี</label>
+            <select id="selectStudentYear" onchange="onLoginYearChanged()">
+              <option value="">-- เลือกปี --</option>
+              <option value="1">ปี 1</option>
+              <option value="2">ปี 2</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label for="selectStudentRoom">ห้อง</label>
+            <select id="selectStudentRoom" onchange="onLoginRoomChanged()">
+              <option value="">-- เลือกห้อง --</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label for="selectStudentName">รายชื่อนักเรียน</label>
+          <select id="selectStudentName" required>
+            <option value="">-- กรุณาเลือกห้องก่อน --</option>
+          </select>
+        </div>
+
+        <p class="error-message" id="studentCascadeErrorMessage"></p>
+
+        <button class="primary-button" type="submit">
+          เข้าสู่หน้าสอบ
+        </button>
+      </form>
+    </main>
+  </section>
+
+  <!-- หน้าโปรไฟล์นักเรียน (Student Profile Page) -->
+  <section id="profilePage" class="hidden">
+    <main class="page-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <h1 class="page-title">โปรไฟล์นักเรียน</h1>
+          <p class="page-subtitle" style="margin: 0;">ตรวจสอบข้อมูลและสิทธิ์การเข้าสอบของคุณ</p>
+        </div>
+        <button class="secondary-button" type="button" onclick="goToStudentMenu()">
+          🚪 ออกจากระบบนักเรียน
+        </button>
+      </div>
+
+      <section class="profile-card">
+        <div class="profile-header">
+          <div class="avatar" id="profileAvatarLetter">น</div>
+          <div>
+            <h2 class="student-name" id="profileStudentName">ชื่อนักเรียน</h2>
+            <p class="student-id">
+              รหัสนักเรียน: <span id="profileStudentId">-</span> | ห้อง: <span id="profileStudentYearLabel">-</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="profile-content">
+          <!-- ส่วนที่ 1: สถานะ สิทธิ์สอบ (ตาม 1.txt) -->
+          <h3 class="section-title">
+            <span>🛡️ ส่วนที่ 1 : สถานะสิทธิ์สอบ</span>
+          </h3>
+          <div class="info-grid" style="margin-bottom: 24px;">
+            <div class="info-item" style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <span class="info-label">สิทธิ์สอบภาคเรียนที่ 1 (เทอม 1)</span>
+                <span class="info-value" id="profileTerm1Text">กำลังตรวจสอบ...</span>
+              </div>
+              <div id="profileTerm1Badge" class="term-badge-btn allowed readonly">1</div>
+            </div>
+
+            <div class="info-item" style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <span class="info-label">สิทธิ์สอบภาคเรียนที่ 2 (เทอม 2)</span>
+                <span class="info-value" id="profileTerm2Text">กำลังตรวจสอบ...</span>
+              </div>
+              <div id="profileTerm2Badge" class="term-badge-btn allowed readonly">2</div>
+            </div>
+          </div>
+
+          <!-- ส่วนที่ 2: เทอม 1 และ วิชาที่เปิดสอบ (ตาม 1.txt) -->
+          <div class="term-section-block">
+            <div class="term-header">
+              <div class="term-title">
+                <span>📘 ส่วนที่ 2 : รายวิชาสอบ ภาคเรียนที่ 1</span>
+              </div>
+              <span id="term1StatusNotice" style="font-size: 13px; font-weight: 500;"></span>
+            </div>
+            <div id="examListTerm1Container" class="exam-list-container">
+              <!-- การ์ดวิชาสอบเทอม 1 -->
+            </div>
+          </div>
+
+          <!-- ส่วนที่ 3: เทอม 2 และ วิชาที่เปิดสอบ (ตาม 1.txt) -->
+          <div class="term-section-block">
+            <div class="term-header">
+              <div class="term-title">
+                <span>📙 ส่วนที่ 3 : รายวิชาสอบ ภาคเรียนที่ 2</span>
+              </div>
+              <span id="term2StatusNotice" style="font-size: 13px; font-weight: 500;"></span>
+            </div>
+            <div id="examListTerm2Container" class="exam-list-container">
+              <!-- การ์ดวิชาสอบเทอม 2 -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- หน้าเข้าสู่ระบบ Admin / ที่ปรึกษา -->
+  <section id="adminLoginPage" class="hidden login-page">
+    <main class="login-card">
+      <img id="loginCardLogo" class="logo-img" src="https://i.ibb.co/SWbq8Zq/person.png" alt="โลโก้ระบบ" />
+
+      <h1 id="loginTitle">เข้าสู่ระบบแอดมิน</h1>
+      <p class="subtitle" id="loginSubtitle">กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ</p>
+
+      <form id="adminLoginForm">
+        <input type="hidden" id="loginRoleType" value="admin" />
+        <label for="adminPasswordInput" id="loginPasswordLabel">รหัสผ่าน</label>
+
+        <div class="input-wrap">
+          <span class="input-icon">🔒</span>
+          <input
+            id="adminPasswordInput"
+            class="has-icon"
+            type="password"
+            placeholder="กรอกรหัสผ่าน"
+            autocomplete="current-password"
+            required
+          />
+          <button
+            class="password-toggle"
+            id="passwordToggleButton"
+            type="button"
+            onclick="togglePassword()"
+          >
+            แสดง
+          </button>
+        </div>
+
+        <p class="error-message" id="adminErrorMessage"></p>
+
+        <button class="primary-button" type="submit">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+    </main>
+  </section>
+
+  <!-- หน้า Admin (ผู้ดูแลระบบ) -->
+  <section id="adminPage" class="hidden">
+    <main class="page-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h1 class="page-title" id="adminTitle">ระบบจัดการข้อมูลแอดมิน</h1>
+          <p class="page-subtitle" id="adminSubtitle" style="margin: 0;">จัดการรายชื่อนักเรียน สิทธิ์สอบ และข้อสอบ</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-sync" type="button" onclick="syncLocalToSupabase()" title="อัปโหลดข้อมูล LocalStorage ทั้งหมดขึ้น Supabase">
+            ☁️ ซิงค์ข้อมูลขึ้น Supabase
+          </button>
+          <button class="delete-button" type="button" onclick="adminLogout()">
+            🚪 ออกจากระบบ
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-nav">
+        <button
+          class="active"
+          id="studentsTab"
+          type="button"
+          onclick="showAdminPage('students')"
+        >
+          👨‍🎓 เพิ่มและจัดการชื่อนักเรียน
+        </button>
+
+        <button
+          id="subjectsTab"
+          type="button"
+          onclick="showAdminPage('subjects')"
+        >
+          📚 จัดการวิชาและข้อสอบ (แยกเทอม)
+        </button>
+      </div>
+
+      <section class="admin-card">
+        <!-- ฟอร์มเพิ่มนักเรียน -->
+        <div id="studentsContent">
+          <h3 class="section-title">เพิ่มชื่อนักเรียน (รายบุคคล)</h3>
+
+          <form id="studentAddForm" style="margin-bottom: 24px;">
+            <div class="info-grid">
+              <div class="info-item">
+                <label for="newStudentId">รหัสนักเรียน</label>
+                <input
+                  id="newStudentId"
+                  type="text"
+                  placeholder="เช่น 6601001"
+                  required
+                />
+              </div>
+
+              <div class="info-item">
+                <label for="newStudentName">ชื่อ - นามสกุล</label>
+                <input
+                  id="newStudentName"
+                  type="text"
+                  placeholder="เช่น สมชาย ใจดี"
+                  required
+                />
+              </div>
+
+              <div class="info-item">
+                <label for="newStudentYear">ชั้นปี</label>
+                <select id="newStudentYear" required>
+                  <option value="1">ปี 1</option>
+                  <option value="2">ปี 2</option>
+                </select>
+              </div>
+
+              <div class="info-item">
+                <label for="newStudentRoom">ห้อง</label>
+                <input
+                  id="newStudentRoom"
+                  type="text"
+                  placeholder="เช่น 1, 2"
+                  required
+                />
+              </div>
+            </div>
+
+            <button class="primary-button" type="submit" style="width: auto; padding: 12px 28px; margin-top: 14px;">
+              + บันทึกนักเรียนรายบุคคล
+            </button>
+          </form>
+
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 26px 0;" />
+
+          <!-- ส่วนนำเข้าไฟล์ Excel -->
+          <h3 class="section-title">📁 นำเข้ารายชื่อจากไฟล์ Excel / CSV</h3>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 24px;">
+            <div class="info-grid" style="margin-bottom: 14px;">
+              <div class="info-item" style="grid-column: span 2;">
+                <label for="excelFileInput">เลือกไฟล์ Excel (.xlsx, .xls, .csv)</label>
+                <input id="excelFileInput" type="file" accept=".xlsx, .xls, .csv" onchange="handleExcelFileSelect(this)" style="background: #fff;" />
+              </div>
+            </div>
+
+            <div class="info-grid" style="margin-bottom: 14px;">
+              <div class="info-item">
+                <label for="sheetSelect">เลือก Sheet (แผ่นงาน)</label>
+                <select id="sheetSelect" style="background: #fff;">
+                  <option value="">-- กรุณาเลือกไฟล์ก่อน --</option>
+                </select>
+              </div>
+              <div class="info-item">
+                <label for="excelTargetYear">กำหนดชั้นปีสำหรับทุกคนในไฟล์นี้</label>
+                <select id="excelTargetYear" style="background: #fff;">
+                  <option value="1">ปี 1</option>
+                  <option value="2">ปี 2</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+              <div>
+                <label style="font-size: 13px;">คอลัมน์ รหัสนักเรียน</label>
+                <input id="colId" type="text" value="A" style="text-transform: uppercase;" placeholder="เช่น A" />
+              </div>
+              <div>
+                <label style="font-size: 13px;">คอลัมน์ ชื่อ</label>
+                <input id="colName" type="text" value="B" style="text-transform: uppercase;" placeholder="เช่น B" />
+              </div>
+              <div>
+                <label style="font-size: 13px;">คอลัมน์ นามสกุล</label>
+                <input id="colLastName" type="text" value="C" style="text-transform: uppercase;" placeholder="เช่น C" />
+              </div>
+            </div>
+
+            <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+              <div>
+                <label style="font-size: 13px;">แถวเริ่มต้น (ใน Excel)</label>
+                <input id="startRow" type="number" value="2" min="1" placeholder="เช่น 2 หรือ 11" />
+              </div>
+              <div>
+                <label style="font-size: 13px;">แถวสิ้นสุด (เว้นว่าง = จนจบ)</label>
+                <input id="endRow" type="number" placeholder="เช่น 30" />
+              </div>
+              <div>
+                <label style="font-size: 13px;">ห้อง (สำหรับไฟล์นี้)</label>
+                <input id="excelRoomInput" type="text" value="1" placeholder="เช่น 1, 2" />
+              </div>
+            </div>
+
+            <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 11px 24px;">
+              📥 อัปโหลดและบันทึกรายชื่อ
+            </button>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 15px; flex-wrap: wrap;">
+            <div>
+              <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนในระบบ</h3>
+              <p style="margin: 2px 0 0; color: #64748b; font-size: 13px;">
+                * ปุ่ม [1] = สิทธิ์สอบเทอม 1, ปุ่ม [2] = สิทธิ์สอบเทอม 2 (<span style="color:#16a34a; font-weight:600;">เขียว = มีสิทธิ์</span>, <span style="color:#e11d48; font-weight:600;">แดง = ไม่มีสิทธิ์</span> สามารถคลิกเพื่อสลับได้)
+              </p>
+            </div>
+            <button class="delete-button" type="button" onclick="deleteAllStudents()" style="padding: 8px 16px; font-weight: 500;">
+              🗑️ ลบรายชื่อทั้งหมด
+            </button>
+          </div>
+
+          <!-- ช่องค้นหารายชื่อ -->
+          <div style="margin-bottom: 16px;">
+            <input
+              id="searchStudentInput"
+              type="text"
+              placeholder="🔍 ค้นหารายชื่อนักเรียน (กรอกรหัสนักเรียน หรือ ชื่อ-นามสกุล)..."
+              oninput="renderStudentsTable()"
+              style="width: 100%; padding: 13px 18px; border: 1px solid #cbd5e1; border-radius: 14px; background: #ffffff;"
+            />
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>รหัสนักเรียน</th>
+                  <th>ชื่อ - นามสกุล</th>
+                  <th>ชั้นปี / ห้อง</th>
+                  <th style="text-align: center;">สิทธิ์สอบ (เทอม 1 | เทอม 2)</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody">
+                <!-- โหลดข้อมูลนักเรียน -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ฟอร์มเพิ่มวิชาและคำถามสอบ -->
+        <div id="subjectsContent" class="hidden">
+          <h3 class="section-title" id="subjectFormTitle">เพิ่มวิชาและคำถามสอบ</h3>
+
+          <form id="subjectAddForm">
+            <input type="hidden" id="editSubjectId" value="" />
+            
+            <div class="info-grid" style="margin-bottom: 18px;">
+              <div class="info-item">
+                <label for="newSubjectCode">รหัสวิชา</label>
+                <input
+                  id="newSubjectCode"
+                  type="text"
+                  placeholder="เช่น ACC101 หรือ MATH101"
+                  required
+                />
+              </div>
+
+              <div class="info-item">
+                <label for="newSubjectName">ชื่อวิชา</label>
+                <input
+                  id="newSubjectName"
+                  type="text"
+                  placeholder="เช่น การบัญชีเบื้องต้น"
+                  required
+                />
+              </div>
+
+              <div class="info-item">
+                <label for="newSubjectYear">กำหนดสำหรับชั้นปี</label>
+                <select id="newSubjectYear" required>
+                  <option value="1">ปี 1</option>
+                  <option value="2">ปี 2</option>
+                </select>
+              </div>
+
+              <!-- ช่องเพิ่ม เทอม (ตาม 1.txt) -->
+              <div class="info-item">
+                <label for="newSubjectTerm">ภาคเรียน (เทอม)</label>
+                <select id="newSubjectTerm" required>
+                  <option value="1">ภาคเรียนที่ 1 (เทอม 1)</option>
+                  <option value="2">ภาคเรียนที่ 2 (เทอม 2)</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 class="section-title" style="font-size: 16px; margin-bottom: 10px;">รายการคำถามข้อสอบ</h4>
+            <div id="questionListContainer">
+              <!-- รายการคำถาม -->
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+              <button class="secondary-button" type="button" onclick="addQuestionField()">
+                + เพิ่มข้อคำถามอีก
+              </button>
+              <button class="secondary-button" type="button" onclick="resetSubjectForm()" style="background: #f1f5f9; color: #475569;">
+                ล้างฟอร์ม
+              </button>
+            </div>
+
+            <button class="primary-button" type="submit" id="subjectSubmitBtn" style="margin-top: 16px;">
+              บันทึกวิชาและคำถามสอบ
+            </button>
+          </form>
+
+          <div class="table-wrap" style="margin-top: 32px;">
+            <h3 class="section-title">รายวิชาสอบทั้งหมดในระบบ</h3>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>รหัสวิชา</th>
+                  <th>ชื่อวิชา</th>
+                  <th>ชั้นปี</th>
+                  <th>ภาคเรียน (เทอม)</th>
+                  <th>จำนวนข้อ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="subjectTableBody">
+                <!-- โหลดรายการวิชา -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- หน้าที่ปรึกษา (ดูคะแนนสอบแยกห้อง/รายวิชา) -->
+  <section id="advisorPage" class="hidden">
+    <main class="page-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h1 class="page-title">ระบบตรวจสอบคะแนน (สำหรับที่ปรึกษา)</h1>
+          <p class="page-subtitle" style="margin: 0;">ตรวจสอบคะแนนของนักเรียน แยกตามห้องเรียน รายวิชา และสถานะสิทธิ์สอบ</p>
+        </div>
+        <button class="delete-button" type="button" onclick="adminLogout()">
+          🚪 ออกจากระบบ
+        </button>
+      </div>
+
+      <section class="admin-card">
+        <div class="info-grid" style="margin-bottom: 18px; grid-template-columns: repeat(3, 1fr);">
+          <div class="info-item">
+            <label for="filterClass">กรองตามห้องเรียน</label>
+            <select id="filterClass" onchange="renderAdvisorScores()">
+              <option value="">-- ทุกห้องเรียน --</option>
+            </select>
+          </div>
+
+          <div class="info-item">
+            <label for="filterSubject">กรองตามรายวิชา</label>
+            <select id="filterSubject" onchange="renderAdvisorScores()">
+              <option value="">-- ทุกรายวิชา --</option>
+            </select>
+          </div>
+
+          <div class="info-item">
+            <label for="filterTerm">กรองตามเทอม</label>
+            <select id="filterTerm" onchange="renderAdvisorScores()">
+              <option value="">-- ทุกเทอม --</option>
+              <option value="1">เทอม 1</option>
+              <option value="2">เทอม 2</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ช่องค้นหารายชื่อสำหรับที่ปรึกษา -->
+        <div style="margin-bottom: 18px;">
+          <input
+            id="searchAdvisorInput"
+            type="text"
+            placeholder="🔍 ค้นหารายชื่อ หรือ รหัสนักเรียน..."
+            oninput="renderAdvisorScores()"
+            style="width: 100%; padding: 13px 18px; border: 1px solid #cbd5e1; border-radius: 14px; background: #ffffff;"
+          />
+        </div>
+
+        <div class="table-wrap">
+          <h3 class="section-title">ตารางสรุปคะแนนนักเรียน</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>รหัสนักเรียน</th>
+                <th>ชื่อ - นามสกุล</th>
+                <th>ห้องเรียน</th>
+                <th>วิชาสอบ</th>
+                <th>เทอม</th>
+                <th>คะแนนที่ได้</th>
+                <th style="text-align: center;">สิทธิ์สอบ (1 | 2)</th>
+              </tr>
+            </thead>
+            <tbody id="advisorScoreTableBody">
+              <!-- ข้อมูลคะแนน -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- หน้าทำข้อสอบ (Exam Page) -->
+  <section id="examPage" class="hidden">
+    <nav class="navbar">
+      <div class="brand">
+        <img class="brand-logo" src="https://i.ibb.co/Tq2NHPvy/image.png" alt="โลโก้วิทยาลัยเทคโนโลยีนนทบุรี" />
+        <span id="examNavTitle">ทำข้อสอบ</span>
+      </div>
+
+      <button class="back-icon-button" type="button" onclick="confirmExitExam()" title="ออกจากการสอบ">
+        ←
+      </button>
+    </nav>
+
+    <main class="page-content">
+      <section class="profile-card" style="padding: 32px 38px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 id="examSubjectTitle" class="section-title" style="margin: 0; font-size: 22px;">วิชาสอบ</h2>
+          <span id="examProgress" style="color: #64748b; font-weight: 500;">ข้อที่ 1 / 10</span>
+        </div>
+
+        <div id="questionContainer" style="margin-bottom: 30px;">
+          <!-- โจทย์และตัวเลือก -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+          <button id="prevBtn" class="secondary-button" type="button" onclick="prevQuestion()" style="margin: 0; width: 120px;">
+            ← ข้อก่อนหน้า
+          </button>
+          <button id="nextBtn" class="primary-button" type="button" onclick="nextQuestion()" style="margin: 0; width: 140px;">
+            ข้อถัดไป →
+          </button>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- Popup Modal สำหรับเชื่อมต่อ Supabase -->
+  <div id="supabaseModal" class="modal-backdrop hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin: 0; font-size: 19px; display: flex; align-items: center; gap: 8px;">
+          <span>⚡</span> ตั้งค่าการเชื่อมต่อ Supabase
+        </h3>
+        <button class="modal-close" onclick="closeSupabaseModal()">✕</button>
+      </div>
+
+      <p style="color: #64748b; font-size: 14px; margin-top: 0; margin-bottom: 16px;">
+        กรอกข้อมูล Project URL และ Anon Public Key จาก Supabase Dashboard เพื่อเชื่อมต่อฐานข้อมูลบน Cloud
+      </p>
+
+      <div style="margin-bottom: 14px;">
+        <label for="cfgSupabaseUrl">Supabase Project URL</label>
+        <input id="cfgSupabaseUrl" type="url" placeholder="https://xxxxxxxxxxxx.supabase.co" />
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label for="cfgSupabaseKey">Supabase Anon Key (Public Key)</label>
+        <textarea id="cfgSupabaseKey" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+      </div>
+
+      <div id="modalConnStatus" style="margin-bottom: 18px; padding: 12px; border-radius: 10px; font-size: 13px; display: none;"></div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="secondary-button" type="button" onclick="testSupabaseConnection()" style="flex: 1;">
+          🔍 ทดสอบการเชื่อมต่อ
+        </button>
+        <button class="primary-button" type="button" onclick="saveSupabaseSettings()" style="flex: 1; margin: 0;">
+          💾 บันทึกการเชื่อมต่อ
+        </button>
+        <button class="delete-button" type="button" onclick="disconnectSupabase()" style="padding: 10px 14px;">
+          ยกเลิก Supabase (กลับใช้เครื่อง)
+        </button>
+      </div>
+
+      <div style="margin-top: 20px; padding: 12px 14px; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; font-size: 13px; color: #475569;">
+        <strong>💡 คำแนะนำ:</strong> หากยังไม่มีตารางใน Supabase สามารถนำโค้ดในไฟล์ <code>supabase-setup.sql</code> ไปวางในเมนู <strong>SQL Editor</strong> ของ Supabase แล้วกด <strong>Run</strong> เพื่อสร้างตารางได้ทันที
+      </div>
+    </div>
+  </div>
+
+  <!-- กล่อง Toast แจ้งเตือนข้อความสั้น -->
+  <div id="toastMessage"></div>
+
+  <script>
+    // ==========================================================================
+    // 1. SUPABASE CLIENT & CONFIGURATION
+    // ==========================================================================
+    // คุณสามารถใส่ค่าเริ่มต้น URL และ Key ของ Supabase ได้ที่นี่โดยตรง หรือตั้งค่าผ่านปุ่มบนหน้าเว็บ
+    const DEFAULT_SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaWFpZmt6b3d6d2dqZWdsb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODQ2MDAsImV4cCI6MjEwNTg2MDYwMH0.vu4l_EqcfZKEfSHdWn5ZMnl7U8g8S2932knrtrtErPk";
+
+    let supabase = null;
+    let isSupabaseReady = false;
+
+    function initSupabase() {
+      const url = localStorage.getItem("supabaseUrl") || DEFAULT_SUPABASE_URL;
+      const key = localStorage.getItem("supabaseKey") || DEFAULT_SUPABASE_ANON_KEY;
+
+      if (url && key && window.supabase) {
+        try {
+          supabase = window.supabase.createClient(url.trim(), key.trim());
+          isSupabaseReady = true;
+          updateDbBadge(true);
+        } catch (e) {
+          console.error("Supabase init error:", e);
+          isSupabaseReady = false;
+          updateDbBadge(false);
+        }
+      } else {
+        isSupabaseReady = false;
+        updateDbBadge(false);
+      }
+    }
+
+    function updateDbBadge(connected) {
+      const badge = document.getElementById("dbStatusBadge");
+      const dot = document.getElementById("dbStatusDot");
+      const text = document.getElementById("dbStatusText");
+
+      if (connected) {
+        badge.className = "db-badge connected";
+        dot.textContent = "🟢";
+        text.textContent = "Supabase Cloud";
+        badge.title = "เชื่อมต่อ Supabase สำเร็จ (คลิกเพื่อแก้ไข)";
+      } else {
+        badge.className = "db-badge disconnected";
+        dot.textContent = "🟡";
+        text.textContent = "LocalStorage";
+        badge.title = "ใช้งานออฟไลน์ในเครื่อง (คลิกเพื่อเชื่อมต่อ Supabase)";
+      }
+    }
+
+    function openSupabaseModal() {
+      document.getElementById("cfgSupabaseUrl").value = localStorage.getItem("supabaseUrl") || DEFAULT_SUPABASE_URL;
+      document.getElementById("cfgSupabaseKey").value = localStorage.getItem("supabaseKey") || DEFAULT_SUPABASE_ANON_KEY;
+      document.getElementById("modalConnStatus").style.display = "none";
+      document.getElementById("supabaseModal").classList.remove("hidden");
+    }
+
+    function closeSupabaseModal() {
+      document.getElementById("supabaseModal").classList.add("hidden");
+    }
+
+    async function testSupabaseConnection() {
+      const url = document.getElementById("cfgSupabaseUrl").value.trim();
+      const key = document.getElementById("cfgSupabaseKey").value.trim();
+      const statusBox = document.getElementById("modalConnStatus");
+
+      if (!url || !key) {
+        statusBox.style.display = "block";
+        statusBox.style.background = "#fff1f2";
+        statusBox.style.color = "#e11d48";
+        statusBox.textContent = "⚠️ กรุณากรอก URL และ Anon Key ให้ครบถ้วน";
+        return;
+      }
+
+      statusBox.style.display = "block";
+      statusBox.style.background = "#eff6ff";
+      statusBox.style.color = "#1d4ed8";
+      statusBox.textContent = "⏳ กำลังทดสอบเชื่อมต่อกับ Supabase...";
+
+      try {
+        const client = window.supabase.createClient(url, key);
+        const { data, error } = await client.from("students").select("id").limit(1);
+
+        if (error) {
+          throw error;
+        }
+
+        statusBox.style.background = "#f0fdf4";
+        statusBox.style.color = "#16a34a";
+        statusBox.textContent = "✓ เชื่อมต่อสำเร็จ! พบคลังข้อมูล 'students' พร้อมใช้งาน";
+      } catch (err) {
+        statusBox.style.background = "#fff1f2";
+        statusBox.style.color = "#e11d48";
+        statusBox.innerHTML = `✕ การเชื่อมต่อไม่สำเร็จ: ${err.message || "ตรวจสอบ URL/Key หรือรันไฟล์ supabase-setup.sql เพื่อสร้างตารางก่อน"}`;
+      }
+    }
+
+    async function saveSupabaseSettings() {
+      const url = document.getElementById("cfgSupabaseUrl").value.trim();
+      const key = document.getElementById("cfgSupabaseKey").value.trim();
+
+      if (!url || !key) {
+        alert("กรุณากรอกทั้ง URL และ Anon Key");
+        return;
+      }
+
+      localStorage.setItem("supabaseUrl", url);
+      localStorage.setItem("supabaseKey", key);
+
+      initSupabase();
+      closeSupabaseModal();
+      showToast("บันทึกการตั้งค่า Supabase เรียบร้อยแล้ว");
+
+      // รีเฟรชข้อมูลตามหน้าปัจจุบัน
+      await refreshCurrentPageData();
+    }
+
+    function disconnectSupabase() {
+      if (confirm("ต้องการตัดการเชื่อมต่อ Supabase แล้วกลับไปใช้ LocalStorage หรือไม่?")) {
+        localStorage.removeItem("supabaseUrl");
+        localStorage.removeItem("supabaseKey");
+        supabase = null;
+        isSupabaseReady = false;
+        updateDbBadge(false);
+        closeSupabaseModal();
+        showToast("เปลี่ยนเป็นโหมด LocalStorage แล้ว");
+        refreshCurrentPageData();
+      }
+    }
+
+    // ==========================================================================
+    // 2. DATA STORE LAYER (SUPABASE + LOCALSTORAGE FALLBACK)
+    // ==========================================================================
+    const db = {
+      // นักเรียน
+      async getStudents() {
+        if (isSupabaseReady) {
+          const { data, error } = await supabase.from("students").select("*").order("id", { ascending: true });
+          if (!error && data) {
+            return data.map(s => ({
+              id: s.id,
+              name: s.name,
+              studentClass: s.student_class,
+              term1_status: s.term1_status !== false,
+              term2_status: s.term2_status !== false,
+              status: s.term1_status !== false || s.term2_status !== false
+            }));
+          }
+        }
+        return JSON.parse(localStorage.getItem("examStudents")) || [];
+      },
+
+      async addStudent(student) {
+        if (isSupabaseReady) {
+          const { error } = await supabase.from("students").upsert({
+            id: student.id,
+            name: student.name,
+            student_class: student.studentClass,
+            term1_status: student.term1_status !== false,
+            term2_status: student.term2_status !== false
+          });
+          if (error) throw error;
+        }
+
+        // เก็บสำรองใน local
+        let local = JSON.parse(localStorage.getItem("examStudents")) || [];
+        local = local.filter(s => s.id !== student.id);
+        local.push(student);
+        localStorage.setItem("examStudents", JSON.stringify(local));
+      },
+
+      async updateStudentRights(id, term, newStatus) {
+        if (isSupabaseReady) {
+          const updateField = term === 1 ? { term1_status: newStatus } : { term2_status: newStatus };
+          const { error } = await supabase.from("students").update(updateField).eq("id", id);
+          if (error) console.error("Error updating rights in Supabase:", error);
+        }
+
+        let local = JSON.parse(localStorage.getItem("examStudents")) || [];
+        local = local.map(s => {
+          if (s.id === id) {
+            if (term === 1) s.term1_status = newStatus;
+            if (term === 2) s.term2_status = newStatus;
+            s.status = s.term1_status !== false || s.term2_status !== false;
+          }
+          return s;
+        });
+        localStorage.setItem("examStudents", JSON.stringify(local));
+      },
+
+      async deleteStudent(id) {
+        if (isSupabaseReady) {
+          await supabase.from("students").delete().eq("id", id);
+          await supabase.from("exam_scores").delete().eq("student_id", id);
+        }
+
+        let students = JSON.parse(localStorage.getItem("examStudents")) || [];
+        students = students.filter(s => s.id !== id);
+        localStorage.setItem("examStudents", JSON.stringify(students));
+
+        let scores = JSON.parse(localStorage.getItem("examScores")) || [];
+        scores = scores.filter(s => s.studentId !== id);
+        localStorage.setItem("examScores", JSON.stringify(scores));
+      },
+
+      async deleteAllStudents() {
+        if (isSupabaseReady) {
+          await supabase.from("students").delete().neq("id", "___dummy___");
+          await supabase.from("exam_scores").delete().neq("student_id", "___dummy___");
+        }
+        localStorage.setItem("examStudents", JSON.stringify([]));
+        localStorage.setItem("examScores", JSON.stringify([]));
+      },
+
+      async importStudents(studentsList) {
+        if (isSupabaseReady && studentsList.length > 0) {
+          const payload = studentsList.map(s => ({
+            id: s.id,
+            name: s.name,
+            student_class: s.studentClass,
+            term1_status: s.term1_status !== false,
+            term2_status: s.term2_status !== false
+          }));
+          const { error } = await supabase.from("students").upsert(payload);
+          if (error) throw error;
+        }
+
+        let local = JSON.parse(localStorage.getItem("examStudents")) || [];
+        studentsList.forEach(item => {
+          local = local.filter(s => s.id !== item.id);
+          local.push(item);
+        });
+        localStorage.setItem("examStudents", JSON.stringify(local));
+      },
+
+      // รายวิชา
+      async getSubjects() {
+        if (isSupabaseReady) {
+          const { data, error } = await supabase.from("subjects").select("*").order("id", { ascending: true });
+          if (!error && data) {
+            return data.map(sub => ({
+              id: sub.id,
+              name: sub.name,
+              targetYear: sub.target_year,
+              term: sub.term || "1",
+              questions: Array.isArray(sub.questions) ? sub.questions : (typeof sub.questions === 'string' ? JSON.parse(sub.questions) : [])
+            }));
+          }
+        }
+        return JSON.parse(localStorage.getItem("examSubjects")) || [];
+      },
+
+      async saveSubject(subData, isEdit, oldId = null) {
+        if (isSupabaseReady) {
+          if (isEdit && oldId && oldId !== subData.id) {
+            await supabase.from("subjects").delete().eq("id", oldId);
+          }
+          const { error } = await supabase.from("subjects").upsert({
+            id: subData.id,
+            name: subData.name,
+            target_year: subData.targetYear,
+            term: subData.term,
+            questions: subData.questions
+          });
+          if (error) throw error;
+        }
+
+        let local = JSON.parse(localStorage.getItem("examSubjects")) || [];
+        if (isEdit) {
+          local = local.filter(s => s.id !== oldId && s.id !== subData.id);
+        } else {
+          local = local.filter(s => s.id !== subData.id);
+        }
+        local.push(subData);
+        localStorage.setItem("examSubjects", JSON.stringify(local));
+      },
+
+      async deleteSubject(id) {
+        if (isSupabaseReady) {
+          await supabase.from("subjects").delete().eq("id", id);
+        }
+        let local = JSON.parse(localStorage.getItem("examSubjects")) || [];
+        local = local.filter(s => s.id !== id);
+        localStorage.setItem("examSubjects", JSON.stringify(local));
+      },
+
+      // คะแนนสอบ
+      async getScores() {
+        if (isSupabaseReady) {
+          const { data, error } = await supabase.from("exam_scores").select("*").order("created_at", { ascending: false });
+          if (!error && data) {
+            return data.map(row => ({
+              studentId: row.student_id,
+              name: row.name,
+              studentClass: row.student_class,
+              subjectId: row.subject_id,
+              subjectName: row.subject_name,
+              term: row.term || "1",
+              score: row.score
+            }));
+          }
+        }
+        return JSON.parse(localStorage.getItem("examScores")) || [];
+      },
+
+      async saveScore(scoreRecord) {
+        if (isSupabaseReady) {
+          // ลบคะแนนเก่าในวิชานี้ของนักเรียนคนนี้ก่อนบันทึกใหม่
+          await supabase.from("exam_scores")
+            .delete()
+            .eq("student_id", scoreRecord.studentId)
+            .eq("subject_id", scoreRecord.subjectId);
+
+          const { error } = await supabase.from("exam_scores").insert({
+            student_id: scoreRecord.studentId,
+            name: scoreRecord.name,
+            student_class: scoreRecord.studentClass,
+            subject_id: scoreRecord.subjectId,
+            subject_name: scoreRecord.subjectName,
+            term: scoreRecord.term || "1",
+            score: scoreRecord.score
+          });
+          if (error) console.error("Error saving score to Supabase:", error);
+        }
+
+        let local = JSON.parse(localStorage.getItem("examScores")) || [];
+        local = local.filter(s => !(s.studentId === scoreRecord.studentId && s.subjectId === scoreRecord.subjectId));
+        local.push(scoreRecord);
+        localStorage.setItem("examScores", JSON.stringify(local));
+      }
+    };
+
+    // ซิงค์ LocalStorage ขึ้น Supabase
+    async function syncLocalToSupabase() {
+      if (!isSupabaseReady) {
+        alert("กรุณาเชื่อมต่อ Supabase ให้เรียบร้อยก่อนกดซิงค์ข้อมูล");
+        openSupabaseModal();
+        return;
+      }
+
+      if (!confirm("คุณต้องการนำข้อมูลทั้งหมดที่มีใน LocalStorage (เครื่องนี้) อัปโหลดขึ้น Supabase ใช่หรือไม่?")) {
+        return;
+      }
+
+      try {
+        const localStudents = JSON.parse(localStorage.getItem("examStudents")) || [];
+        const localSubjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
+        const localScores = JSON.parse(localStorage.getItem("examScores")) || [];
+
+        let studentCount = 0;
+        let subjectCount = 0;
+        let scoreCount = 0;
+
+        if (localStudents.length > 0) {
+          await db.importStudents(localStudents);
+          studentCount = localStudents.length;
+        }
+
+        for (const sub of localSubjects) {
+          await db.saveSubject(sub, false);
+          subjectCount++;
+        }
+
+        for (const sc of localScores) {
+          await db.saveScore(sc);
+          scoreCount++;
+        }
+
+        alert(`✓ ซิงค์ข้อมูลขึ้น Supabase สำเร็จ!\n- นักเรียน: ${studentCount} คน\n- วิชาสอบ: ${subjectCount} วิชา\n- บันทึกคะแนน: ${scoreCount} รายการ`);
+        refreshCurrentPageData();
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดขณะซิงค์: " + err.message);
+      }
+    }
+
+    // ==========================================================================
+    // 3. UI STATE & NAVIGATION
+    // ==========================================================================
+    const loginPage = document.getElementById("loginPage");
+    const profilePage = document.getElementById("profilePage");
+    const adminLoginPage = document.getElementById("adminLoginPage");
+    const adminPage = document.getElementById("adminPage");
+    const advisorPage = document.getElementById("advisorPage");
+    const examPage = document.getElementById("examPage");
+
+    const studentIdForm = document.getElementById("studentIdForm");
+    const studentCascadeForm = document.getElementById("studentCascadeForm");
+    const studentIdInput = document.getElementById("studentIdInput");
+    const studentErrorMessage = document.getElementById("studentErrorMessage");
+    const studentCascadeErrorMessage = document.getElementById("studentCascadeErrorMessage");
+
+    const adminLoginForm = document.getElementById("adminLoginForm");
+    const adminPasswordInput = document.getElementById("adminPasswordInput");
+    const adminErrorMessage = document.getElementById("adminErrorMessage");
+    const passwordToggleButton = document.getElementById("passwordToggleButton");
+
+    function showToast(text) {
+      const toast = document.getElementById("toastMessage");
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    function toggleMenu(event) {
+      event.stopPropagation();
+      const dropdown = document.getElementById("mainDropdown");
+      dropdown.classList.toggle("show");
+    }
+
+    window.addEventListener("click", function () {
+      const dropdown = document.getElementById("mainDropdown");
+      if (dropdown) dropdown.classList.remove("show");
+    });
+
+    function hideAllPages() {
+      loginPage.classList.add("hidden");
+      profilePage.classList.add("hidden");
+      adminLoginPage.classList.add("hidden");
+      adminPage.classList.add("hidden");
+      advisorPage.classList.add("hidden");
+      examPage.classList.add("hidden");
+      const dropdown = document.getElementById("mainDropdown");
+      if (dropdown) dropdown.classList.remove("show");
+    }
+
+    function goToStudentMenu() {
+      localStorage.removeItem("studentId");
+      localStorage.removeItem("studentName");
+      localStorage.removeItem("studentClass");
+      studentIdInput.value = "";
+      hideAllPages();
+      loginPage.classList.remove("hidden");
+      loadStudentCascadeOptions();
+    }
+
+    function switchLoginMode(mode) {
+      const tabId = document.getElementById("tabModeId");
+      const tabList = document.getElementById("tabModeList");
+
+      if (mode === "byId") {
+        tabId.classList.add("active");
+        tabList.classList.remove("active");
+        studentIdForm.classList.remove("hidden");
+        studentCascadeForm.classList.add("hidden");
+      } else {
+        tabList.classList.add("active");
+        tabId.classList.remove("active");
+        studentCascadeForm.classList.remove("hidden");
+        studentIdForm.classList.add("hidden");
+        loadStudentCascadeOptions();
+      }
+    }
+
+    // ==========================================================================
+    // 4. CASCADE DROPDOWN (เลือกชั้นปี -> ห้อง -> ชื่อ ตาม 1.txt)
+    // ==========================================================================
+    let cachedStudentsForLogin = [];
+
+    async function loadStudentCascadeOptions() {
+      cachedStudentsForLogin = await db.getStudents();
+      onLoginYearChanged();
+    }
+
+    function onLoginYearChanged() {
+      const year = document.getElementById("selectStudentYear").value;
+      const roomSelect = document.getElementById("selectStudentRoom");
+      const nameSelect = document.getElementById("selectStudentName");
+
+      roomSelect.innerHTML = '<option value="">-- เลือกห้อง --</option>';
+      nameSelect.innerHTML = '<option value="">-- กรุณาเลือกห้องก่อน --</option>';
+
+      if (!year) return;
+
+      // ค้นหาห้องทั้งหมดที่มีในชั้นปีนี้
+      const roomsSet = new Set();
+      cachedStudentsForLogin.forEach(s => {
+        const parts = (s.studentClass || "").split("/");
+        if (parts[0] === year && parts[1]) {
+          roomsSet.add(parts[1]);
+        }
+      });
+
+      const sortedRooms = Array.from(roomsSet).sort((a,b) => a.localeCompare(b, undefined, { numeric: true }));
+      sortedRooms.forEach(room => {
+        const opt = document.createElement("option");
+        opt.value = room;
+        opt.textContent = `ห้อง ${room}`;
+        roomSelect.appendChild(opt);
+      });
+    }
+
+    function onLoginRoomChanged() {
+      const year = document.getElementById("selectStudentYear").value;
+      const room = document.getElementById("selectStudentRoom").value;
+      const nameSelect = document.getElementById("selectStudentName");
+
+      nameSelect.innerHTML = '<option value="">-- เลือกชื่อนักเรียน --</option>';
+
+      if (!year || !room) return;
+
+      const targetClass = `${year}/${room}`;
+      const filtered = cachedStudentsForLogin.filter(s => s.studentClass === targetClass);
+
+      filtered.sort((a,b) => a.name.localeCompare(b.name, 'th'));
+      filtered.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;
+        opt.textContent = `${s.id} - ${s.name}`;
+        nameSelect.appendChild(opt);
+      });
+    }
+
+    studentIdForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const studentId = studentIdInput.value.trim();
+
+      if (studentId === "") {
+        studentErrorMessage.textContent = "กรุณากรอกรหัสนักเรียน";
+        studentErrorMessage.style.display = "block";
+        studentIdInput.focus();
+        return;
+      }
+
+      const students = await db.getStudents();
+      const found = students.find(s => s.id === studentId);
+
+      if (!found) {
+        studentErrorMessage.textContent = "ไม่พบรหัสนักเรียนนี้ในระบบ กรุณาติดต่อแอดมิน";
+        studentErrorMessage.style.display = "block";
+        studentIdInput.focus();
+        return;
+      }
+
+      localStorage.setItem("studentId", studentId);
+      localStorage.setItem("studentName", found.name);
+      localStorage.setItem("studentClass", found.studentClass);
+
+      await loginAsStudent(found);
+    });
+
+    studentCascadeForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const selectedId = document.getElementById("selectStudentName").value;
+
+      if (!selectedId) {
+        studentCascadeErrorMessage.textContent = "กรุณาเลือกรายชื่อนักเรียน";
+        studentCascadeErrorMessage.style.display = "block";
+        return;
+      }
+
+      const found = cachedStudentsForLogin.find(s => s.id === selectedId);
+      if (!found) {
+        studentCascadeErrorMessage.textContent = "ไม่พบข้อมูลนักเรียน";
+        studentCascadeErrorMessage.style.display = "block";
+        return;
+      }
+
+      localStorage.setItem("studentId", found.id);
+      localStorage.setItem("studentName", found.name);
+      localStorage.setItem("studentClass", found.studentClass);
+
+      await loginAsStudent(found);
+    });
+
+    // ==========================================================================
+    // 5. STUDENT PROFILE & EXAM LIST SEPARATION (เทอม 1 & เทอม 2 ตาม 1.txt)
+    // ==========================================================================
+    let currentStudentProfile = null;
+
+    async function loginAsStudent(student) {
+      currentStudentProfile = student;
+
+      document.getElementById("profileStudentId").textContent = student.id;
+      document.getElementById("profileStudentName").textContent = student.name;
+      document.getElementById("profileAvatarLetter").textContent = student.name ? student.name.charAt(0) : "น";
+      document.getElementById("profileStudentYearLabel").textContent = student.studentClass;
+
+      // ส่วนที่ 1: สถานะสิทธิ์สอบ (เทอม 1 และ เทอม 2)
+      const term1Allowed = student.term1_status !== false;
+      const term2Allowed = student.term2_status !== false;
+
+      const t1Badge = document.getElementById("profileTerm1Badge");
+      const t1Text = document.getElementById("profileTerm1Text");
+      if (term1Allowed) {
+        t1Badge.className = "term-badge-btn allowed readonly";
+        t1Text.innerHTML = '<span style="color:#16a34a; font-weight:600;">✓ มีสิทธิ์สอบ</span>';
+      } else {
+        t1Badge.className = "term-badge-btn disallowed readonly";
+        t1Text.innerHTML = '<span style="color:#e11d48; font-weight:600;">✕ ไม่มีสิทธิ์สอบ</span>';
+      }
+
+      const t2Badge = document.getElementById("profileTerm2Badge");
+      const t2Text = document.getElementById("profileTerm2Text");
+      if (term2Allowed) {
+        t2Badge.className = "term-badge-btn allowed readonly";
+        t2Text.innerHTML = '<span style="color:#16a34a; font-weight:600;">✓ มีสิทธิ์สอบ</span>';
+      } else {
+        t2Badge.className = "term-badge-btn disallowed readonly";
+        t2Text.innerHTML = '<span style="color:#e11d48; font-weight:600;">✕ ไม่มีสิทธิ์สอบ</span>';
+      }
+
+      // ส่วนที่ 2 และ ส่วนที่ 3: โหลดรายวิชาแยกตามเทอม
+      await loadStudentSubjectsSeparated(student.id, student.studentClass, term1Allowed, term2Allowed);
+
+      hideAllPages();
+      profilePage.classList.remove("hidden");
+    }
+
+    async function loadStudentSubjectsSeparated(studentId, studentClass, term1Allowed, term2Allowed) {
+      const containerT1 = document.getElementById("examListTerm1Container");
+      const containerT2 = document.getElementById("examListTerm2Container");
+      containerT1.innerHTML = "";
+      containerT2.innerHTML = "";
+
+      const subjects = await db.getSubjects();
+      const scores = await db.getScores();
+
+      const studentYearNum = (studentClass || "").split("/")[0];
+      const yearSubjects = subjects.filter(sub => sub.targetYear === studentYearNum);
+
+      // กรองเทอม 1
+      const t1Subjects = yearSubjects.filter(sub => (sub.term || "1") === "1");
+      // กรองเทอม 2
+      const t2Subjects = yearSubjects.filter(sub => (sub.term || "1") === "2");
+
+      renderTermSubjects(t1Subjects, scores, studentId, containerT1, term1Allowed, "1");
+      renderTermSubjects(t2Subjects, scores, studentId, containerT2, term2Allowed, "2");
+    }
+
+    function renderTermSubjects(subjList, scores, studentId, container, isAllowed, termNum) {
+      if (subjList.length === 0) {
+        container.innerHTML = `<p style="color: #94a3b8; text-align: center; margin: 12px 0;">ไม่มีวิชาสอบสำหรับภาคเรียนที่ ${termNum}</p>`;
+        return;
+      }
+
+      subjList.forEach(sub => {
+        const existingScore = scores.find(s => s.studentId === studentId && s.subjectId === sub.id);
+        const isDone = !!existingScore;
+
+        let buttonHtml = "";
+        if (!isAllowed) {
+          buttonHtml = `
+            <button class="start-button no-perm" type="button" disabled style="width: auto; margin-top: 0; padding: 10px 18px;">
+              ไม่มีสิทธิ์สอบ (เทอม ${termNum})
+            </button>
+          `;
+        } else if (isDone) {
+          buttonHtml = `
+            <button class="start-button done" type="button" disabled style="width: auto; margin-top: 0; padding: 10px 18px;">
+              สอบแล้ว
+            </button>
+          `;
+        } else {
+          buttonHtml = `
+            <button class="start-button" type="button" onclick="startExam('${sub.id}')" style="width: auto; margin-top: 0; padding: 10px 18px;">
+              เริ่มทำข้อสอบ
+            </button>
+          `;
+        }
+
+        const box = document.createElement("div");
+        box.className = "exam-box";
+        box.innerHTML = `
+          <div>
+            <h3>${sub.name} (${sub.id})</h3>
+            <p>
+              ข้อสอบปรนัย ${sub.questions ? sub.questions.length : 0} ข้อ | ภาคเรียนที่ ${sub.term || termNum}
+              ${isDone ? '<br><span style="color: #16a34a; font-weight: 600;">คะแนนที่ได้: ' + existingScore.score + '</span>' : ''}
+            </p>
+          </div>
+          ${buttonHtml}
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    // ==========================================================================
+    // 6. ADMIN & ADVISOR LOGIN & NAVIGATION
+    // ==========================================================================
+    function showAdminLogin(role) {
+      hideAllPages();
+      adminLoginPage.classList.remove("hidden");
+
+      const roleTypeInput = document.getElementById("loginRoleType");
+      const loginTitle = document.getElementById("loginTitle");
+      const loginSubtitle = document.getElementById("loginSubtitle");
+      const loginPasswordLabel = document.getElementById("loginPasswordLabel");
+      const loginCardLogo = document.getElementById("loginCardLogo");
+
+      roleTypeInput.value = role;
+
+      if (role === "advisor") {
+        loginTitle.textContent = "เข้าสู่ระบบที่ปรึกษา";
+        loginSubtitle.textContent = "กรุณากรอกรหัสผ่านเพื่อตรวจสอบคะแนนสอบ";
+        loginPasswordLabel.textContent = "รหัสผ่านที่ปรึกษา (ntc)";
+        loginCardLogo.src = "https://i.ibb.co/SWbq8Zq/person.png";
+      } else {
+        loginTitle.textContent = "เข้าสู่ระบบแอดมิน";
+        loginSubtitle.textContent = "กรุณากรอกรหัสผ่านเพื่อจัดการข้อสอบและนักเรียน";
+        loginPasswordLabel.textContent = "รหัสผ่านแอดมิน (pp1234)";
+        loginCardLogo.src = "https://i.ibb.co/V0MFdZ54/settings.png";
+      }
+
+      adminPasswordInput.value = "";
+      adminPasswordInput.type = "password";
+      passwordToggleButton.textContent = "แสดง";
+      adminErrorMessage.style.display = "none";
+
+      setTimeout(() => adminPasswordInput.focus(), 100);
+    }
+
+    function togglePassword() {
+      if (adminPasswordInput.type === "password") {
+        adminPasswordInput.type = "text";
+        passwordToggleButton.textContent = "ซ่อน";
+      } else {
+        adminPasswordInput.type = "password";
+        passwordToggleButton.textContent = "แสดง";
+      }
+    }
+
+    adminLoginForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const roleType = document.getElementById("loginRoleType").value;
+      const pass = adminPasswordInput.value;
+
+      if (roleType === "advisor" && pass !== "ntc") {
+        adminErrorMessage.textContent = "รหัสผ่านที่ปรึกษาไม่ถูกต้อง";
+        adminErrorMessage.style.display = "block";
+        adminPasswordInput.focus();
+        return;
+      }
+
+      if (roleType === "admin" && pass !== "pp1234") {
+        adminErrorMessage.textContent = "รหัสผ่านแอดมินไม่ถูกต้อง";
+        adminErrorMessage.style.display = "block";
+        adminPasswordInput.focus();
+        return;
+      }
+
+      adminErrorMessage.style.display = "none";
+
+      if (roleType === "advisor") {
+        localStorage.setItem("advisorLoggedIn", "true");
+        showAdvisorPage();
+      } else {
+        localStorage.setItem("adminLoggedIn", "true");
+        showAdminPage("students");
+      }
+    });
+
+    async function showAdminPage(page) {
+      if (localStorage.getItem("adminLoggedIn") !== "true") {
+        showAdminLogin("admin");
+        return;
+      }
+
+      hideAllPages();
+      adminPage.classList.remove("hidden");
+
+      const title = document.getElementById("adminTitle");
+      const subtitle = document.getElementById("adminSubtitle");
+      const studentsContent = document.getElementById("studentsContent");
+      const subjectsContent = document.getElementById("subjectsContent");
+
+      document.querySelectorAll(".admin-nav button").forEach(b => b.classList.remove("active"));
+
+      if (page === "students") {
+        title.textContent = "เพิ่มและจัดการชื่อนักเรียน";
+        subtitle.textContent = "จัดการรายชื่อนักเรียน สิทธิ์สอบเทอม 1 และ เทอม 2 (ปุ่ม 1 และ 2)";
+        studentsContent.classList.remove("hidden");
+        subjectsContent.classList.add("hidden");
+        document.getElementById("studentsTab").classList.add("active");
+        await renderStudentsTable();
+      }
+
+      if (page === "subjects") {
+        title.textContent = "จัดการวิชาและข้อสอบ (แยกเทอม)";
+        subtitle.textContent = "สร้างและแก้ไขรายวิชาสอบ กำหนดชั้นปี และภาคเรียนที่ 1 หรือ 2";
+        studentsContent.classList.add("hidden");
+        subjectsContent.classList.remove("hidden");
+        document.getElementById("subjectsTab").classList.add("active");
+        await renderSubjectsTable();
+        if (document.getElementById("questionListContainer").children.length === 0) {
+          addQuestionField();
+        }
+      }
+    }
+
+    function adminLogout() {
+      const wasAdvisor = localStorage.getItem("advisorLoggedIn") === "true";
+      localStorage.removeItem("adminLoggedIn");
+      localStorage.removeItem("advisorLoggedIn");
+
+      if (wasAdvisor) {
+        showAdminLogin("advisor");
+      } else {
+        showAdminLogin("admin");
+      }
+    }
+
+    // ==========================================================================
+    // 7. ADMIN - STUDENTS MANAGEMENT (ปุ่มสิทธิ์ 1 และ 2 ตาม 1.txt)
+    // ==========================================================================
+    document.getElementById("studentAddForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const studentId = document.getElementById("newStudentId").value.trim();
+      const studentName = document.getElementById("newStudentName").value.trim();
+      const studentYear = document.getElementById("newStudentYear").value;
+      const studentRoom = document.getElementById("newStudentRoom").value.trim();
+      const studentClass = `${studentYear}/${studentRoom}`;
+
+      const students = await db.getStudents();
+      if (students.some(s => s.id === studentId)) {
+        alert("รหัสนักเรียนนี้มีอยู่ในระบบแล้ว");
+        return;
+      }
+
+      try {
+        await db.addStudent({
+          id: studentId,
+          name: studentName,
+          studentClass: studentClass,
+          term1_status: true,
+          term2_status: true,
+          status: true
+        });
+
+        this.reset();
+        await renderStudentsTable();
+        showToast("เพิ่มนักเรียนสำเร็จ!");
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการบันทึก: " + err.message);
+      }
+    });
+
+    async function renderStudentsTable() {
+      const tbody = document.getElementById("studentTableBody");
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b;">กำลังโหลดข้อมูล...</td></tr>`;
+
+      const students = await db.getStudents();
+      tbody.innerHTML = "";
+
+      const searchQuery = (document.getElementById("searchStudentInput")?.value || "").trim().toLowerCase();
+
+      const filtered = students.filter(s => {
+        return (s.id || "").toLowerCase().includes(searchQuery) || (s.name || "").toLowerCase().includes(searchQuery);
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b;">ไม่พบรายชื่อนักเรียนในระบบ</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(s => {
+        const isT1 = s.term1_status !== false;
+        const isT2 = s.term2_status !== false;
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><strong>${s.id}</strong></td>
+          <td>${s.name}</td>
+          <td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${s.studentClass}</span></td>
+          <td style="text-align: center;">
+            <div class="status-badge-container">
+              <button 
+                type="button" 
+                class="term-badge-btn ${isT1 ? 'allowed' : 'disallowed'}" 
+                title="คลิกเพื่อสลับสิทธิ์สอบ เทอม 1"
+                onclick="toggleTermRights('${s.id}', 1, ${!isT1})"
+              >1</button>
+              <button 
+                type="button" 
+                class="term-badge-btn ${isT2 ? 'allowed' : 'disallowed'}" 
+                title="คลิกเพื่อสลับสิทธิ์สอบ เทอม 2"
+                onclick="toggleTermRights('${s.id}', 2, ${!isT2})"
+              >2</button>
+            </div>
+          </td>
+          <td>
+            <button class="delete-button" type="button" onclick="handleDeleteStudent('${s.id}')">ลบ</button>
+          </td>
+        `;
+      });
+    }
+
+    async function toggleTermRights(studentId, term, newStatus) {
+      await db.updateStudentRights(studentId, term, newStatus);
+      showToast(`อัปเดตสิทธิ์สอบ เทอม ${term} แล้ว`);
+      await renderStudentsTable();
+    }
+
+    async function handleDeleteStudent(id) {
+      if (confirm(`ต้องการลบนักเรียนรหัส ${id} ใช่หรือไม่?`)) {
+        await db.deleteStudent(id);
+        showToast("ลบข้อมูลนักเรียนเรียบร้อย");
+        await renderStudentsTable();
+      }
+    }
+
+    async function deleteAllStudents() {
+      if (confirm("⚠️ คำเตือน: คุณต้องการลบรายชื่อนักเรียนทั้งหมดและข้อมูลคะแนนสอบทั้งหมดใช่หรือไม่?")) {
+        await db.deleteAllStudents();
+        showToast("ลบรายชื่อนักเรียนทั้งหมดเรียบร้อยแล้ว");
+        await renderStudentsTable();
+      }
+    }
+
+    // ==========================================================================
+    // 8. EXCEL IMPORT
+    // ==========================================================================
+    let loadedWorkbook = null;
+
+    function handleExcelFileSelect(input) {
+      if (input.files.length === 0) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          loadedWorkbook = XLSX.read(data, { type: "array" });
+
+          const sheetSelect = document.getElementById("sheetSelect");
+          sheetSelect.innerHTML = "";
+
+          loadedWorkbook.SheetNames.forEach(sheetName => {
+            const opt = document.createElement("option");
+            opt.value = sheetName;
+            opt.textContent = sheetName;
+            sheetSelect.appendChild(opt);
+          });
+          showToast("อ่านไฟล์ Excel สำเร็จ");
+        } catch (error) {
+          alert("ไม่สามารถอ่านไฟล์ Excel ได้: " + error.message);
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function colLetterToIndex(str) {
+      let col = str.toUpperCase().trim();
+      let sum = 0;
+      for (let i = 0; i < col.length; i++) {
+        sum *= 26;
+        sum += (col.charCodeAt(i) - 64);
+      }
+      return sum - 1;
+    }
+
+    async function importExcelFile() {
+      if (!loadedWorkbook) {
+        alert("กรุณาเลือกไฟล์ Excel ก่อนครับ");
+        return;
+      }
+
+      const sheetName = document.getElementById("sheetSelect").value;
+      const targetYear = document.getElementById("excelTargetYear").value;
+      const room = document.getElementById("excelRoomInput").value.trim() || "1";
+
+      const colIdStr = document.getElementById("colId").value;
+      const colNameStr = document.getElementById("colName").value;
+      const colLastNameStr = document.getElementById("colLastName").value;
+
+      const colId = colLetterToIndex(colIdStr);
+      const colName = colLetterToIndex(colNameStr);
+      const colLastName = colLetterToIndex(colLastNameStr);
+
+      const startRowInput = parseInt(document.getElementById("startRow").value) || 1;
+      const endRowInput = document.getElementById("endRow").value.trim();
+
+      if (isNaN(colId) || isNaN(colName) || colId < 0 || colName < 0) {
+        alert("กรุณากรอกชื่อคอลัมน์เป็นตัวอักษรภาษาอังกฤษให้ถูกต้อง (เช่น A, B, C)");
+        return;
+      }
+
+      try {
+        const worksheet = loadedWorkbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        let newStudents = [];
+        const startIndex = startRowInput - 1;
+        const endIndex = endRowInput !== "" ? Math.min(parseInt(endRowInput) - 1, rows.length - 1) : rows.length - 1;
+
+        for (let i = startIndex; i <= endIndex; i++) {
+          if (i < 0 || i >= rows.length) continue;
+          const row = rows[i];
+          if (!row || row.length === 0) continue;
+
+          const id = row[colId] !== undefined ? String(row[colId]).trim() : "";
+          const namePart = row[colName] !== undefined ? String(row[colName]).trim() : "";
+          const lastNamePart = (colLastName >= 0 && row[colLastName] !== undefined) ? String(row[colLastName]).trim() : "";
+
+          const fullName = `${namePart} ${lastNamePart}`.trim();
+
+          if (id && fullName) {
+            const studentClass = `${targetYear}/${room}`;
+            newStudents.push({
+              id: id,
+              name: fullName,
+              studentClass: studentClass,
+              term1_status: true,
+              term2_status: true,
+              status: true
+            });
+          }
+        }
+
+        if (newStudents.length === 0) {
+          alert("ไม่พบข้อมูลนักเรียนที่ตรงตามเงื่อนไขในแถวที่เลือก");
+          return;
+        }
+
+        await db.importStudents(newStudents);
+        await renderStudentsTable();
+        alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${newStudents.length} คน!`);
+      } catch (error) {
+        alert("เกิดข้อผิดพลาดในการประมวลผล: " + error.message);
+      }
+    }
+
+    // ==========================================================================
+    // 9. ADMIN - SUBJECTS & QUESTIONS (พร้อมเลือกเทอม 1 / เทอม 2 ตาม 1.txt)
+    // ==========================================================================
+    function addQuestionField(qData = null) {
+      const container = document.getElementById("questionListContainer");
+      const card = document.createElement("div");
+      card.className = "question-card";
+
+      const qText = qData ? qData.text : "";
+      const optA = qData ? qData.a : "";
+      const optB = qData ? qData.b : "";
+      const optC = qData ? qData.c : "";
+      const optD = qData ? qData.d : "";
+      const ans = qData ? qData.ans : "ก";
+
+      const qIndex = container.children.length + 1;
+
+      card.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <label style="margin: 0; font-weight:600; color:#1e3a8a;">ข้อคำถามที่ ${qIndex}</label>
+          <button type="button" class="delete-button" onclick="this.closest('.question-card').remove(); renumberQuestions();">ลบข้อนี้</button>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <input type="text" class="q-text" placeholder="ระบุโจทย์คำถาม" value="${qText}" required />
+        </div>
+        <div class="info-grid">
+          <div><label>ตัวเลือก ก</label><input type="text" class="opt-a" placeholder="ตัวเลือก ก" value="${optA}" required /></div>
+          <div><label>ตัวเลือก ข</label><input type="text" class="opt-b" placeholder="ตัวเลือก ข" value="${optB}" required /></div>
+          <div><label>ตัวเลือก ค</label><input type="text" class="opt-c" placeholder="ตัวเลือก ค" value="${optC}" required /></div>
+          <div><label>ตัวเลือก ง</label><input type="text" class="opt-d" placeholder="ตัวเลือก ง" value="${optD}" required /></div>
+        </div>
+        <div style="margin-top: 10px;">
+          <label>เฉลยคำตอบที่ถูกต้อง</label>
+          <select class="q-ans">
+            <option value="ก" ${ans === 'ก' ? 'selected' : ''}>ก</option>
+            <option value="ข" ${ans === 'ข' ? 'selected' : ''}>ข</option>
+            <option value="ค" ${ans === 'ค' ? 'selected' : ''}>ค</option>
+            <option value="ง" ${ans === 'ง' ? 'selected' : ''}>ง</option>
+          </select>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    function renumberQuestions() {
+      const cards = document.querySelectorAll("#questionListContainer .question-card");
+      cards.forEach((c, idx) => {
+        const lbl = c.querySelector("label");
+        if (lbl) lbl.textContent = `ข้อคำถามที่ ${idx + 1}`;
+      });
+    }
+
+    document.getElementById("subjectAddForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const editId = document.getElementById("editSubjectId").value;
+      const subjectCode = document.getElementById("newSubjectCode").value.trim().toUpperCase();
+      const subjectName = document.getElementById("newSubjectName").value.trim();
+      const targetYear = document.getElementById("newSubjectYear").value;
+      const targetTerm = document.getElementById("newSubjectTerm").value;
+      const questionCards = document.querySelectorAll(".question-card");
+
+      if (questionCards.length === 0) {
+        alert("กรุณาเพิ่มอย่างน้อย 1 คำถาม");
+        return;
+      }
+
+      let questionsArray = [];
+      questionCards.forEach(card => {
+        questionsArray.push({
+          text: card.querySelector(".q-text").value.trim(),
+          a: card.querySelector(".opt-a").value.trim(),
+          b: card.querySelector(".opt-b").value.trim(),
+          c: card.querySelector(".opt-c").value.trim(),
+          d: card.querySelector(".opt-d").value.trim(),
+          ans: card.querySelector(".q-ans").value
+        });
+      });
+
+      const subjects = await db.getSubjects();
+
+      if (!editId && subjects.some(s => s.id === subjectCode)) {
+        alert("รหัสวิชานี้มีอยู่ในระบบแล้ว");
+        return;
+      }
+
+      try {
+        const subData = {
+          id: subjectCode,
+          name: subjectName,
+          targetYear: targetYear,
+          term: targetTerm,
+          questions: questionsArray
+        };
+
+        await db.saveSubject(subData, !!editId, editId);
+        showToast(editId ? "อัปเดตวิชาสอบเรียบร้อยแล้ว!" : "บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
+        resetSubjectForm();
+        await renderSubjectsTable();
+      } catch (err) {
+        alert("เกิดข้อผิดพลาดในการบันทึกวิชา: " + err.message);
+      }
+    });
+
+    async function renderSubjectsTable() {
+      const tbody = document.getElementById("subjectTableBody");
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">กำลังโหลดวิชา...</td></tr>`;
+
+      const subjects = await db.getSubjects();
+      tbody.innerHTML = "";
+
+      if (subjects.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">ยังไม่มีรายวิชาในระบบ</td></tr>`;
+        return;
+      }
+
+      subjects.forEach(sub => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><strong>${sub.id}</strong></td>
+          <td>${sub.name}</td>
+          <td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">ปี ${sub.targetYear}</span></td>
+          <td><span style="padding: 4px 8px; border-radius: 6px; background: #fef3c7; color: #92400e; font-size: 13px;">เทอม ${sub.term || '1'}</span></td>
+          <td>${sub.questions ? sub.questions.length : 0} ข้อ</td>
+          <td>
+            <button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button>
+            <button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button>
+          </td>
+        `;
+      });
+    }
+
+    async function editSubject(id) {
+      const subjects = await db.getSubjects();
+      const sub = subjects.find(s => s.id === id);
+      if (!sub) return;
+
+      document.getElementById("editSubjectId").value = sub.id;
+      document.getElementById("newSubjectCode").value = sub.id;
+      document.getElementById("newSubjectName").value = sub.name;
+      document.getElementById("newSubjectYear").value = sub.targetYear;
+      document.getElementById("newSubjectTerm").value = sub.term || "1";
+      document.getElementById("subjectFormTitle").textContent = `แก้ไขวิชา: ${sub.name}`;
+      document.getElementById("subjectSubmitBtn").textContent = "อัปเดตวิชาและคำถามสอบ";
+
+      const container = document.getElementById("questionListContainer");
+      container.innerHTML = "";
+      (sub.questions || []).forEach(q => addQuestionField(q));
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteSubject(id) {
+      if (confirm(`ต้องการลบวิชา ${id} ใช่หรือไม่?`)) {
+        await db.deleteSubject(id);
+        showToast("ลบวิชาเรียบร้อยแล้ว");
+        resetSubjectForm();
+        await renderSubjectsTable();
+      }
+    }
+
+    function resetSubjectForm() {
+      document.getElementById("editSubjectId").value = "";
+      document.getElementById("subjectFormTitle").textContent = "เพิ่มวิชาและคำถามสอบ";
+      document.getElementById("subjectSubmitBtn").textContent = "บันทึกวิชาและคำถามสอบ";
+      document.getElementById("subjectAddForm").reset();
+
+      document.getElementById("questionListContainer").innerHTML = "";
+      addQuestionField();
+    }
+
+    // ==========================================================================
+    // 10. ADVISOR PAGE (พร้อมปุ่มสิทธิ์ 1 และ 2 ตาม 1.txt)
+    // ==========================================================================
+    async function showAdvisorPage() {
+      hideAllPages();
+      advisorPage.classList.remove("hidden");
+
+      const filterClass = document.getElementById("filterClass");
+      const filterSubject = document.getElementById("filterSubject");
+
+      filterClass.innerHTML = '<option value="">-- ทุกห้องเรียน --</option>';
+      filterSubject.innerHTML = '<option value="">-- ทุกรายวิชา --</option>';
+
+      const students = await db.getStudents();
+      const classes = [...new Set(students.map(s => s.studentClass).filter(Boolean))].sort();
+      classes.forEach(cls => {
+        const opt = document.createElement("option");
+        opt.value = cls;
+        opt.textContent = cls;
+        filterClass.appendChild(opt);
+      });
+
+      const subjects = await db.getSubjects();
+      subjects.forEach(sub => {
+        const opt = document.createElement("option");
+        opt.value = sub.name;
+        opt.textContent = `${sub.name} (${sub.id})`;
+        filterSubject.appendChild(opt);
+      });
+
+      document.getElementById("searchAdvisorInput").value = "";
+      await renderAdvisorScores();
+    }
+
+    async function renderAdvisorScores() {
+      const tbody = document.getElementById("advisorScoreTableBody");
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">กำลังโหลดคะแนนสอบ...</td></tr>`;
+
+      const selectedClass = document.getElementById("filterClass").value;
+      const selectedSubject = document.getElementById("filterSubject").value;
+      const selectedTerm = document.getElementById("filterTerm").value;
+      const searchQuery = (document.getElementById("searchAdvisorInput")?.value || "").trim().toLowerCase();
+
+      const scores = await db.getScores();
+      const students = await db.getStudents();
+
+      // สร้าง Map สำหรับดึงสิทธิ์ 1 และ 2 ของนักเรียน
+      const studentMap = {};
+      students.forEach(s => { studentMap[s.id] = s; });
+
+      const filtered = scores.filter(item => {
+        const matchClass = selectedClass === "" || item.studentClass === selectedClass;
+        const matchSubject = selectedSubject === "" || item.subjectName === selectedSubject || (item.subjectName && item.subjectName.includes(selectedSubject));
+        const matchTerm = selectedTerm === "" || String(item.term || "1") === selectedTerm;
+        const matchSearch = searchQuery === "" || (item.studentId || "").toLowerCase().includes(searchQuery) || (item.name || "").toLowerCase().includes(searchQuery);
+        return matchClass && matchSubject && matchTerm && matchSearch;
+      });
+
+      tbody.innerHTML = "";
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b;">ไม่พบข้อมูลคะแนนสอบตามเงื่อนไข</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(s => {
+        const std = studentMap[s.studentId] || {};
+        const isT1 = std.term1_status !== false;
+        const isT2 = std.term2_status !== false;
+
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><strong>${s.studentId}</strong></td>
+          <td>${s.name}</td>
+          <td><span style="padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${s.studentClass}</span></td>
+          <td>${s.subjectName}</td>
+          <td>เทอม ${s.term || '1'}</td>
+          <td><strong style="color: #2563eb; font-size: 15px;">${s.score}</strong></td>
+          <td style="text-align: center;">
+            <div class="status-badge-container">
+              <span class="term-badge-btn ${isT1 ? 'allowed' : 'disallowed'} readonly">1</span>
+              <span class="term-badge-btn ${isT2 ? 'allowed' : 'disallowed'} readonly">2</span>
+            </div>
+          </td>
+        `;
+      });
+    }
+
+    // ==========================================================================
+    // 11. EXAM TAKING & SUBMISSION
+    // ==========================================================================
+    let currentExamData = null;
+    let currentQuestionIndex = 0;
+    let studentAnswers = {};
+
+    async function startExam(subId) {
+      const subjects = await db.getSubjects();
+      const sub = subjects.find(s => s.id === subId);
+
+      if (!sub || !sub.questions || sub.questions.length === 0) {
+        alert("ยังไม่มีข้อสอบในรายวิชานี้");
+        return;
+      }
+
+      currentExamData = sub;
+      currentQuestionIndex = 0;
+      studentAnswers = {};
+
+      document.getElementById("examNavTitle").textContent = `สอบวิชา: ${sub.name}`;
+      document.getElementById("examSubjectTitle").textContent = `${sub.name} (${sub.id})`;
+
+      hideAllPages();
+      examPage.classList.remove("hidden");
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = currentExamData.questions[currentQuestionIndex];
+      const container = document.getElementById("questionContainer");
+
+      document.getElementById("examProgress").textContent = `ข้อที่ ${currentQuestionIndex + 1} / ${currentExamData.questions.length}`;
+
+      const selectedOpt = studentAnswers[currentQuestionIndex] || "";
+
+      container.innerHTML = `
+        <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px;">
+          ${currentQuestionIndex + 1}. ${q.text}
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          ${renderOptionCard("ก", q.a, selectedOpt)}
+          ${renderOptionCard("ข", q.b, selectedOpt)}
+          ${renderOptionCard("ค", q.c, selectedOpt)}
+          ${renderOptionCard("ง", q.d, selectedOpt)}
+        </div>
+      `;
+
+      document.getElementById("prevBtn").style.display = currentQuestionIndex === 0 ? "none" : "block";
+      const nextBtn = document.getElementById("nextBtn");
+      if (currentQuestionIndex === currentExamData.questions.length - 1) {
+        nextBtn.textContent = "ส่งข้อสอบ";
+      } else {
+        nextBtn.textContent = "ข้อถัดไป →";
+      }
+    }
+
+    function renderOptionCard(letter, text, selected) {
+      const isChecked = selected === letter;
+      return `
+        <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${isChecked ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${isChecked ? '#eff6ff' : '#f8fafc'}; cursor: pointer; transition: 0.15s;">
+          <input type="radio" name="examOption" value="${letter}" ${isChecked ? 'checked' : ''} onclick="selectOption('${letter}')" style="width: auto;">
+          <span><strong>${letter}.</strong> ${text}</span>
+        </label>
+      `;
+    }
+
+    function selectOption(opt) {
+      studentAnswers[currentQuestionIndex] = opt;
+      renderQuestion();
+    }
+
+    function prevQuestion() {
+      if (currentQuestionIndex > 0) {
+        currentQuestionIndex--;
+        renderQuestion();
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestionIndex < currentExamData.questions.length - 1) {
+        currentQuestionIndex++;
+        renderQuestion();
+      } else {
+        submitExam();
+      }
+    }
+
+    async function submitExam() {
+      let score = 0;
+      const total = currentExamData.questions.length;
+
+      currentExamData.questions.forEach((q, index) => {
+        if (studentAnswers[index] === q.ans) {
+          score++;
+        }
+      });
+
+      const scoreText = `${score} / ${total} คะแนน`;
+
+      const studentId = localStorage.getItem("studentId");
+      const name = localStorage.getItem("studentName");
+      const studentClass = localStorage.getItem("studentClass");
+
+      const scoreRecord = {
+        studentId: studentId,
+        name: name,
+        studentClass: studentClass,
+        subjectId: currentExamData.id,
+        subjectName: currentExamData.name,
+        term: currentExamData.term || "1",
+        score: scoreText
+      };
+
+      await db.saveScore(scoreRecord);
+
+      alert(`🎉 ส่งข้อสอบเรียบร้อยแล้ว!\nผลคะแนนที่คุณทำได้: ${scoreText}`);
+
+      const students = await db.getStudents();
+      const currentStudent = students.find(s => s.id === studentId);
+      if (currentStudent) {
+        await loginAsStudent(currentStudent);
+      } else {
+        goToStudentMenu();
+      }
+    }
+
+    function confirmExitExam() {
+      if (confirm("ต้องการออกจากการสอบใช่หรือไม่? คะแนนจะไม่ถูกบันทึก")) {
+        const studentId = localStorage.getItem("studentId");
+        db.getStudents().then(students => {
+          const currentStudent = students.find(s => s.id === studentId);
+          if (currentStudent) {
+            loginAsStudent(currentStudent);
+          } else {
+            goToStudentMenu();
+          }
+        });
+      }
+    }
+
+    async function refreshCurrentPageData() {
+      if (!adminPage.classList.contains("hidden")) {
+        if (document.getElementById("studentsTab").classList.contains("active")) {
+          await renderStudentsTable();
+        } else {
+          await renderSubjectsTable();
+        }
+      } else if (!advisorPage.classList.contains("hidden")) {
+        await renderAdvisorScores();
+      } else if (!profilePage.classList.contains("hidden") && currentStudentProfile) {
+        const students = await db.getStudents();
+        const found = students.find(s => s.id === currentStudentProfile.id);
+        if (found) await loginAsStudent(found);
+      }
+    }
+
+    // ==========================================================================
+    // 12. INITIALIZATION ON PAGE LOAD
+    // ==========================================================================
+    window.addEventListener("DOMContentLoaded", async function () {
+      initSupabase();
+
+      // ตรวจสอบสถานะการล็อกอินเดิม
+      const savedStudentId = localStorage.getItem("studentId");
+      if (savedStudentId) {
+        const students = await db.getStudents();
+        const found = students.find(s => s.id === savedStudentId);
+        if (found) {
+          await loginAsStudent(found);
+          return;
+        }
+      }
+
+      if (localStorage.getItem("adminLoggedIn") === "true") {
+        await showAdminPage("students");
+        return;
+      }
+
+      if (localStorage.getItem("advisorLoggedIn") === "true") {
+        await showAdvisorPage();
+        return;
+      }
+
+      goToStudentMenu();
+    });
+  </script>
+</body>
+</html>
