@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '12';
+    const CURRENT_VERSION = '13';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้มีระยะห่างสวยงาม ไม่ชิดขอบการ์ด */
+    /* ปรับแต่งการแสดงผลในมือถือให้สวยงามและมีระยะห่างพอดี */
     @media (max-width: 640px) {
       .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
       .student-name { 
@@ -48,9 +48,8 @@
         text-overflow: ellipsis; 
         max-width: 280px;
       }
-      /* เพิ่ม Padding ด้านในของการ์ดในหน้าจอหลักมือถือ */
-      .profile-card, .admin-card { padding: 20px 16px !important; }
-      .profile-content { padding: 16px 8px !important; }
+      .profile-card, .admin-card { padding: 24px 18px !important; }
+      .profile-content { padding: 16px 4px !important; }
       
       .exam-box { padding: 14px; gap: 10px; align-items: flex-start; flex-direction: column; }
       .exam-box div { width: 100%; }
@@ -67,8 +66,6 @@
       }
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
-      /* เพิ่มระยะห่างและการ์ดข้อสอบไม่ให้ตัวเลือกชิดขอบซ้ายขวา */
-      #examPage .profile-card { padding: 24px 16px !important; }
       #questionContainer label {
         padding: 16px !important;
         margin-bottom: 8px;
@@ -505,14 +502,16 @@
     <nav class="navbar">
       <div class="brand">
         <img class="brand-logo" src="https://i.ibb.co/Tq2NHPvy/image.png" alt="" />
-        <span id="examNavTitle">ทำข้อสอบ</span>
+        <span>กำลังทำข้อสอบ</span>
       </div>
       <button class="back-icon-button" type="button" onclick="confirmExitExam()" title="ออกจากการสอบ">←</button>
     </nav>
     <main class="page-content">
+      <div style="margin-bottom: 16px; padding: 0 4px;">
+        <h2 id="examSubjectTitle" style="margin: 0; font-size: 22px; color: #0f172a; font-weight: 600;">วิชาสอบ</h2>
+      </div>
       <section class="profile-card" style="padding: 32px 42px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 id="examSubjectTitle" class="section-title" style="margin: 0; font-size: 22px;">วิชาสอบ</h2>
+        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
           <span id="examProgress" style="color: #64748b; font-weight: 500;">ข้อที่ 1 / 10</span>
         </div>
         <div id="questionContainer" style="margin-bottom: 30px;"></div>
@@ -1184,8 +1183,10 @@
       const sub = (JSON.parse(localStorage.getItem("examSubjects")) || []).find(s => s.id === subId);
       if (!sub || !sub.questions || sub.questions.length === 0) { alert("ยังไม่มีข้อสอบในรายวิชานี้"); return; }
       currentExamData = sub; currentQuestionIndex = 0; studentAnswers = {};
-      document.getElementById("examNavTitle").textContent = "สอบวิชา: " + sub.name;
+      
+      // แสดงชื่อวิชาและรหัสวิชานอกการ์ดด้านบน
       document.getElementById("examSubjectTitle").textContent = sub.name + " (" + sub.id + ")";
+      
       hideAllPages();
       examPage.classList.remove("hidden");
       renderQuestion();
