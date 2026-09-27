@@ -4,14 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
-  <script>// กำหนดเวอร์ชันปัจจุบัน (ถ้าเปลี่ยนหน้าเว็บ ให้เปลี่ยนเลข 2 เป็น 3, 4, ... เรื่อยๆ)
-  const CURRENT_VERSION = '2';
-  
+  <script>
+  const CURRENT_VERSION = '3';
   if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
-    localStorage.clear(); // ล้างข้อมูลเก่าที่ค้างในเครื่องทิ้งทั้งหมด
+    const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
+    localStorage.clear();
     sessionStorage.clear();
-    localStorage.setItem('app_version', CURRENT_VERSION); // บันทึกเวอร์ชันใหม่
-    window.location.reload(true); // รีเฟรชหน้าจอใหม่ทันที
+    if (supabaseToken) {
+      localStorage.setItem('sb-rpiaifkzowzwgjeglody-auth-token', supabaseToken);
+    }
+    localStorage.setItem('app_version', CURRENT_VERSION);
+    window.location.reload(true);
   }
 </script>
 
