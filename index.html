@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '9';
+    const CURRENT_VERSION = '10';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลชื่อและวิชาในมือถือให้อยู่บรรทัดเดียว */
+    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม ไม่เบียดและไม่ตกขอบ */
     @media (max-width: 640px) {
       .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
       .student-name { 
@@ -49,15 +49,21 @@
         max-width: 280px;
       }
       .profile-card { padding: 0 !important; }
-      .exam-box { padding: 16px; gap: 12px; }
+      .exam-box { padding: 14px; gap: 10px; align-items: flex-start; flex-direction: column; }
+      .exam-box div { width: 100%; }
       .exam-box h3 { 
         font-size: 15px !important; 
-        white-space: nowrap !important; 
-        overflow: hidden; 
-        text-overflow: ellipsis; 
-        max-width: 170px;
+        white-space: normal !important; 
+        word-break: break-word;
       }
-      .start-button { padding: 10px 14px !important; font-size: 14px !important; min-width: 90px; }
+      .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
+      
+      /* ปรับระยะห่างตัวเลือกในหน้าทำข้อสอบไม่ให้เบียดกัน */
+      #questionContainer label {
+        padding: 16px !important;
+        margin-bottom: 4px;
+        line-height: 1.5;
+      }
     }
 
     * { box-sizing: border-box; }
@@ -510,7 +516,7 @@
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaWFpZmt6b3d6d2dqZWdsb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODQ2MDAsImV4cCI6MjEwNTg2MDYwMH0.vu4l_EqcfZKEfSHdWn5ZMnl7U8g8S2932knrtrtErPk";
+    const SUPABASE_ANON_KEY = "วางรหัส Anon Key ตัวจริงของคุณตรงนี้";
 
     let supabaseClient = null;
     if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("วางรหัส")) {
@@ -783,7 +789,7 @@
         const isDone = !!existingScore;
         const box = document.createElement("div");
         box.className = "exam-box";
-        box.innerHTML = `<div><h3>${sub.name} (${sub.id})</h3><p>ข้อสอบปรนัย จำนวน ${sub.questions.length} ข้อ | สำหรับชั้นปีที่ ${sub.targetYear} ${isDone ? '<br><span style="color: #16a34a; font-weight: 500;">คะแนนที่ได้: ' + existingScore.score + '</span>' : ''}</p></div><button class="start-button ${isDone ? 'done' : ''}" type="button" ${isDone ? 'disabled' : ''} onclick="startExam('${sub.id}')" style="width: auto; margin-top: 0; padding: 10px 18px;">${isDone ? 'สอบแล้ว' : 'เริ่มทำข้อสอบ'}</button>`;
+        box.innerHTML = `<div><h3>${sub.name} (${sub.id})</h3><p>ข้อสอบปรนัย จำนวน ${sub.questions.length} ข้อ | สำหรับชั้นปีที่ ${sub.targetYear} ${isDone ? '<br><span style="color: #16a34a; font-weight: 500;">คะแนนที่ได้: ' + existingScore.score + '</span>' : ''}</p></div><button class="start-button ${isDone ? 'done' : ''}" type="button" ${isDone ? 'disabled' : ''} onclick="startExam('${sub.id}')">${isDone ? 'สอบแล้ว' : 'เริ่มทำข้อสอบ'}</button>`;
         container.appendChild(box);
       });
     }
@@ -1183,7 +1189,7 @@
 
       container.innerHTML = `
         <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px;">${currentQuestionIndex + 1}. ${q.text}</p>
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
           <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ก' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ก' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ก" ${selectedOpt === 'ก' ? 'checked' : ''} onclick="selectOption('ก')" style="width: auto;"><span>ก. ${q.a}</span></label>
           <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ข' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ข' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ข" ${selectedOpt === 'ข' ? 'checked' : ''} onclick="selectOption('ข')" style="width: auto;"><span>ข. ${q.b}</span></label>
           <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ค' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ค' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ค" ${selectedOpt === 'ค' ? 'checked' : ''} onclick="selectOption('ค')" style="width: auto;"><span>ค. ${q.c}</span></label>
