@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-  const CURRENT_VERSION = '5';
+  const CURRENT_VERSION = '3';
   if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
     const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
     localStorage.clear();
@@ -481,14 +481,12 @@
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_5qfxrwaRp33JEOeRma9AIw_UafkUFwv";
+    const SUPABASE_ANON_KEY = "วางรหัส Anon Key ตัวจริงของคุณตรงนี้";
 
     let supabaseClient = null;
-    if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("วางรหัส")) {
+    if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("***")) {
       try {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          realtime: { enabled: false } // ปิดระบบ Realtime อัตโนมัติเพื่อตัดปัญหา WebSocket Error
-        });
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       } catch (e) {
         console.error("Supabase client init error:", e);
       }
@@ -669,9 +667,8 @@
       }
     });
 
-    studentForm.addEventListener("submit", async event => {
+    studentForm.addEventListener("submit", event => {
       event.preventDefault();
-      await syncDataFromSupabase();
       const studentId = studentIdInput.value.trim();
       if (!studentId) {
         studentErrorMessage.textContent = "กรุณากรอกรหัสนักเรียน";
@@ -763,12 +760,11 @@
     studentIdInput.addEventListener("input", () => studentErrorMessage.style.display = "none");
     adminPasswordInput.addEventListener("input", () => adminErrorMessage.style.display = "none");
 
-    async function showAdminPage(page) {
+    function showAdminPage(page) {
       if (localStorage.getItem("adminLoggedIn") !== "true") {
         showAdminLogin("admin");
         return;
       }
-      await syncDataFromSupabase();
       hideAllPages();
       adminPage.classList.remove("hidden");
       const title = document.getElementById("adminTitle");
@@ -796,8 +792,7 @@
       }
     }
 
-    async function showAdvisorPage() {
-      await syncDataFromSupabase();
+    function showAdvisorPage() {
       hideAllPages();
       advisorPage.classList.remove("hidden");
       const filterClass = document.getElementById("filterClass");
@@ -1135,8 +1130,7 @@
 
     let currentExamData = null, currentQuestionIndex = 0, studentAnswers = {};
 
-    async function startExam(subId) {
-      await syncDataFromSupabase();
+    function startExam(subId) {
       const sub = (JSON.parse(localStorage.getItem("examSubjects")) || []).find(s => s.id === subId);
       if (!sub || !sub.questions || sub.questions.length === 0) { alert("ยังไม่มีข้อสอบในรายวิชานี้"); return; }
       currentExamData = sub; currentQuestionIndex = 0; studentAnswers = {};
@@ -1219,7 +1213,6 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       await syncDataFromSupabase();
-
       const savedStudentId = localStorage.getItem("studentId");
       const savedStudentName = localStorage.getItem("studentName");
       const savedStudentClass = localStorage.getItem("studentClass");
