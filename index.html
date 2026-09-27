@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '15';
+    const CURRENT_VERSION = '16';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,9 +38,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้สวยงามและกรอบสีน้ำเงินโค้งมนพอดี */
+    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม */
     @media (max-width: 640px) {
-      .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; border-radius: 18px; margin: 12px; }
+      .profile-header { padding: 32px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; border-radius: 0; margin: 0; }
       .student-name { 
         font-size: 20px !important; 
         white-space: nowrap !important; 
@@ -48,8 +48,8 @@
         text-overflow: ellipsis; 
         max-width: 280px;
       }
-      .profile-card, .admin-card { padding: 12px !important; }
-      .profile-content { padding: 16px 8px !important; }
+      .profile-card, .admin-card { padding: 0 !important; overflow: hidden !important; }
+      .profile-content { padding: 24px 16px !important; }
       
       .exam-box { padding: 14px; gap: 10px; align-items: flex-start; flex-direction: column; }
       .exam-box div { width: 100%; }
@@ -157,7 +157,7 @@
       overflow: hidden; border: 1px solid #e2e8f0; border-radius: 22px;
       background: rgba(255, 255, 255, 0.93); box-shadow: 0 15px 45px rgba(30, 64, 175, 0.1);
     }
-    .profile-header { padding: 32px 42px; display: flex; align-items: center; gap: 22px; color: #ffffff; background: linear-gradient(135deg, #0ea5e9, #4f46e5); border-radius: 18px; margin: 16px; }
+    .profile-header { padding: 32px 42px; display: flex; align-items: center; gap: 22px; color: #ffffff; background: linear-gradient(135deg, #0ea5e9, #4f46e5); }
     .avatar {
       width: 82px; height: 82px; display: grid; place-items: center; border: 4px solid rgba(255, 255, 255, 0.35);
       border-radius: 50%; background: #dbeafe; color: #2563eb; font-size: 31px; font-weight: 600;
@@ -511,9 +511,7 @@
         <h2 id="examSubjectTitle" style="margin: 0; font-size: 22px; color: #0f172a; font-weight: 600;">วิชาสอบ</h2>
       </div>
       <section class="profile-card" style="padding: 32px 42px;">
-        <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
-          <span id="examProgress" style="color: #64748b; font-weight: 500;">ข้อที่ 1</span>
-        </div>
+        <div style="display: none;"></div>
         <div id="questionContainer" style="margin-bottom: 30px;"></div>
         <div style="display: flex; justify-content: space-between; gap: 10px;">
           <button id="prevBtn" class="secondary-button" type="button" onclick="prevQuestion()" style="margin: 0; width: 120px;">← ข้อก่อนหน้า</button>
@@ -1194,11 +1192,10 @@
     function renderQuestion() {
       const q = currentExamData.questions[currentQuestionIndex];
       const container = document.getElementById("questionContainer");
-      document.getElementById("examProgress").textContent = `ข้อที่ ${currentQuestionIndex + 1}`;
       const selectedOpt = studentAnswers[currentQuestionIndex] || "";
 
       container.innerHTML = `
-        <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px;">${currentQuestionIndex + 1}. ${q.text}</p>
+        <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px;">${q.text}</p>
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ก' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ก' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ก" ${selectedOpt === 'ก' ? 'checked' : ''} onclick="selectOption('ก')" style="width: auto;"><span>ก. ${q.a}</span></label>
           <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ข' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ข' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ข" ${selectedOpt === 'ข' ? 'checked' : ''} onclick="selectOption('ข')" style="width: auto;"><span>ข. ${q.b}</span></label>
