@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '18';
+    const CURRENT_VERSION = '20';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม การ์ดและกล่องสีน้ำเงินพอดีเป๊ะ */
+    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม */
     @media (max-width: 640px) {
       .profile-header { padding: 32px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; border-radius: 0; margin: 0; }
       .student-name { 
@@ -66,12 +66,18 @@
       }
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
-      /* จัดการการ์ดทำข้อสอบให้พอดี ไม่กระตุกและไม่ชิดขอบ */
       #examCardBox {
         padding: 24px 16px !important;
         border-radius: 22px !important;
       }
-      #questionContainer label {
+      .exam-question-item {
+        padding: 16px !important;
+        margin-bottom: 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: #ffffff;
+      }
+      .exam-question-item label {
         padding: 14px 16px !important;
         margin-bottom: 8px;
         line-height: 1.5;
@@ -516,12 +522,8 @@
         <h2 id="examSubjectTitle" style="margin: 0; font-size: 22px; color: #0f172a; font-weight: 600;">วิชาสอบ</h2>
       </div>
       <section id="examCardBox" class="profile-card" style="padding: 32px 42px;">
-        <div style="display: none;"></div>
-        <div id="questionContainer" style="margin-bottom: 30px;"></div>
-        <div style="display: flex; justify-content: space-between; gap: 10px;">
-          <button id="prevBtn" class="secondary-button" type="button" onclick="prevQuestion()" style="margin: 0; width: 120px;">← ข้อก่อนหน้า</button>
-          <button id="nextBtn" class="primary-button" type="button" onclick="nextQuestion()" style="margin: 0; width: 140px;">ข้อถัดไป →</button>
-        </div>
+        <div id="questionContainer" style="margin-bottom: 20px;"></div>
+        <button class="primary-button" type="button" onclick="submitExam()" style="width: 100%; padding: 16px; font-size: 16px;">ส่งข้อสอบ</button>
       </section>
     </main>
   </section>
@@ -580,7 +582,7 @@
             subjectName: sc.subject_name,
             score: sc.score
           }));
-          localStorage.setItem("examScores", JSON.stringify(storedScores));
+          localStorage.setItem("examScores", JSON.stringify(scData));
         }
 
         if (!adminPage.classList.contains("hidden")) {
@@ -1179,45 +1181,45 @@
       addQuestionField();
     }
 
-    let currentExamData = null, currentQuestionIndex = 0, studentAnswers = {};
+    let currentExamData = null, studentAnswers = {};
 
     async function startExam(subId) {
       await syncDataFromSupabase();
       const sub = (JSON.parse(localStorage.getItem("examSubjects")) || []).find(s => s.id === subId);
       if (!sub || !sub.questions || sub.questions.length === 0) { alert("ยังไม่มีข้อสอบในรายวิชานี้"); return; }
-      currentExamData = sub; currentQuestionIndex = 0; studentAnswers = {};
+      currentExamData = sub; studentAnswers = {};
       
       document.getElementById("examSubjectTitle").textContent = sub.name + " (" + sub.id + ")";
       
       hideAllPages();
       examPage.classList.remove("hidden");
-      renderQuestion();
+      renderAllQuestions();
     }
 
-    function renderQuestion() {
-      const q = currentExamData.questions[currentQuestionIndex];
+    function renderAllQuestions() {
       const container = document.getElementById("questionContainer");
-      const selectedOpt = studentAnswers[currentQuestionIndex] || "";
+      container.innerHTML = "";
 
-      container.innerHTML = `
-        <div style="padding: 0 4px;">
-          <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px; line-height: 1.5;">${q.text}</p>
-          <div style="display: flex; flex-direction: column; gap: 14px;">
-            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ก' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ก' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ก" ${selectedOpt === 'ก' ? 'checked' : ''} onclick="selectOption('ก')" style="width: auto;"><span>ก. ${q.a}</span></label>
-            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ข' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ข' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ข" ${selectedOpt === 'ข' ? 'checked' : ''} onclick="selectOption('ข')" style="width: auto;"><span>ข. ${q.b}</span></label>
-            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ค' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ค' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ค" ${selectedOpt === 'ค' ? 'checked' : ''} onclick="selectOption('ค')" style="width: auto;"><span>ค. ${q.c}</span></label>
-            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ง' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ง' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ง" ${selectedOpt === 'ง' ? 'checked' : ''} onclick="selectOption('ง')" style="width: auto;"><span>ง. ${q.d}</span></label>
-          </div>
-        </div>`;
-      document.getElementById("prevBtn").style.display = currentQuestionIndex === 0 ? "none" : "block";
-      document.getElementById("nextBtn").textContent = currentQuestionIndex === currentExamData.questions.length - 1 ? "ส่งข้อสอบ" : "ข้อถัดไป →";
+      currentExamData.questions.forEach((q, index) => {
+        const selectedOpt = studentAnswers[index] || "";
+        const item = document.createElement("div");
+        item.className = "exam-question-item";
+        item.style.marginBottom = "30px";
+        item.innerHTML = `
+          <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 16px; line-height: 1.5;">${index + 1}. ${q.text}</p>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ก' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ก' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption_${index}" value="ก" ${selectedOpt === 'ก' ? 'checked' : ''} onclick="selectOption(${index}, 'ก')" style="width: auto;"><span>ก. ${q.a}</span></label>
+            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ข' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ข' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption_${index}" value="ข" ${selectedOpt === 'ข' ? 'checked' : ''} onclick="selectOption(${index}, 'ข')" style="width: auto;"><span>ข. ${q.b}</span></label>
+            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ค' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ค' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption_${index}" value="ค" ${selectedOpt === 'ค' ? 'checked' : ''} onclick="selectOption(${index}, 'ค')" style="width: auto;"><span>ค. ${q.c}</span></label>
+            <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ง' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ง' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption_${index}" value="ง" ${selectedOpt === 'ง' ? 'checked' : ''} onclick="selectOption(${index}, 'ง')" style="width: auto;"><span>ง. ${q.d}</span></label>
+          </div>`;
+        container.appendChild(item);
+      });
     }
 
-    function selectOption(opt) { studentAnswers[currentQuestionIndex] = opt; renderQuestion(); }
-    function prevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } }
-    function nextQuestion() {
-      if (currentQuestionIndex < currentExamData.questions.length - 1) { currentQuestionIndex++; renderQuestion(); }
-      else { submitExam(); }
+    function selectOption(index, opt) { 
+      studentAnswers[index] = opt; 
+      renderAllQuestions(); 
     }
 
     function submitExam() {
@@ -1227,8 +1229,6 @@
       }
       if (unanswered.length > 0) {
         alert(`คุณยังทำข้อสอบไม่ครบ! กรุณาตอบข้อ: ${unanswered.join(", ")}`);
-        currentQuestionIndex = unanswered[0] - 1;
-        renderQuestion();
         return;
       }
 
