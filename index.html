@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '10';
+    const CURRENT_VERSION = '11';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม ไม่เบียดและไม่ตกขอบ */
+    /* ปรับแต่งการแสดงผลในมือถือให้กระชับ ไม่ให้ตัวเลขชั้นปีตกบรรทัด */
     @media (max-width: 640px) {
       .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
       .student-name { 
@@ -56,9 +56,15 @@
         white-space: normal !important; 
         word-break: break-word;
       }
+      /* ปรับขนาดตัวหนังสือคำอธิบายวิชาในมือถือให้พอดีบรรทัดเดียว */
+      .exam-box p {
+        font-size: 12.5px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
-      /* ปรับระยะห่างตัวเลือกในหน้าทำข้อสอบไม่ให้เบียดกัน */
       #questionContainer label {
         padding: 16px !important;
         margin-bottom: 4px;
