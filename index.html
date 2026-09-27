@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '17';
+    const CURRENT_VERSION = '18';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,9 +38,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้สวยงามและกรอบการ์ดไม่กระตุก */
+    /* ปรับแต่งการแสดงผลในมือถือให้สวยงาม การ์ดและกล่องสีน้ำเงินพอดีเป๊ะ */
     @media (max-width: 640px) {
-      .profile-header { padding: 32px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
+      .profile-header { padding: 32px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; border-radius: 0; margin: 0; }
       .student-name { 
         font-size: 20px !important; 
         white-space: nowrap !important; 
@@ -48,8 +48,8 @@
         text-overflow: ellipsis; 
         max-width: 280px;
       }
-      .profile-card, .admin-card { padding: 24px 18px !important; }
-      .profile-content { padding: 16px 4px !important; }
+      .profile-card, .admin-card { padding: 0 !important; overflow: hidden !important; border-radius: 22px !important; }
+      .profile-content { padding: 24px 16px !important; }
       
       .exam-box { padding: 14px; gap: 10px; align-items: flex-start; flex-direction: column; }
       .exam-box div { width: 100%; }
@@ -66,13 +66,10 @@
       }
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
-      /* ล็อกความสูงการ์ดทำข้อสอบและเพิ่มระยะห่างไม่ให้ชิดขอบ */
+      /* จัดการการ์ดทำข้อสอบให้พอดี ไม่กระตุกและไม่ชิดขอบ */
       #examCardBox {
-        padding: 24px 20px !important;
-        min-height: 480px; 
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        padding: 24px 16px !important;
+        border-radius: 22px !important;
       }
       #questionContainer label {
         padding: 14px 16px !important;
@@ -1052,7 +1049,7 @@
           supabaseClient.from("exam_scores").delete().neq("student_id", "___dummy___").then();
         }
         renderStudentsTable();
-        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้วกครับ!");
+        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้ว!");
       }
     }
 
@@ -1204,7 +1201,7 @@
 
       container.innerHTML = `
         <div style="padding: 0 4px;">
-          <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px; line-height: 1.5;">${currentQuestionIndex + 1}. ${q.text}</p>
+          <p style="font-size: 18px; font-weight: 500; color: #0f172a; margin-bottom: 20px; line-height: 1.5;">${q.text}</p>
           <div style="display: flex; flex-direction: column; gap: 14px;">
             <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ก' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ก' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ก" ${selectedOpt === 'ก' ? 'checked' : ''} onclick="selectOption('ก')" style="width: auto;"><span>ก. ${q.a}</span></label>
             <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid ${selectedOpt === 'ข' ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; background: ${selectedOpt === 'ข' ? '#eff6ff' : '#f8fafc'}; cursor: pointer;"><input type="radio" name="examOption" value="ข" ${selectedOpt === 'ข' ? 'checked' : ''} onclick="selectOption('ข')" style="width: auto;"><span>ข. ${q.b}</span></label>
