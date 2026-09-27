@@ -1213,6 +1213,15 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       await syncDataFromSupabase();
+
+      if (supabaseClient) {
+        supabaseClient.channel('public:all_changes')
+          .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
+            syncDataFromSupabase();
+          })
+          .subscribe();
+      }
+
       const savedStudentId = localStorage.getItem("studentId");
       const savedStudentName = localStorage.getItem("studentName");
       const savedStudentClass = localStorage.getItem("studentClass");
