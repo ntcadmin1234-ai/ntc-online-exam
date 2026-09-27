@@ -2,33 +2,31 @@
 <html lang="th">
 <head>
   <script>
-  // ตรวจจับว่าเปิดผ่านแอป LINE หรือไม่
-  if (navigator.userAgent.includes("Line")) {
-    // ดึง URL ปัจจุบัน
-    const currentUrl = window.location.href;
-    // สร้างลิงก์บังคับเปิดผ่าน Chrome/Safari ภายนอก
-    if (!currentUrl.includes("openExternalBrowser=1")) {
-      const separator = currentUrl.includes("?") ? "&" : "?";
-      window.location.href = currentUrl + separator + "openExternalBrowser=1";
+    // ตรวจจับว่าเปิดผ่านแอป LINE หรือไม่
+    if (navigator.userAgent.includes("Line")) {
+      const currentUrl = window.location.href;
+      if (!currentUrl.includes("openExternalBrowser=1")) {
+        const separator = currentUrl.includes("?") ? "&" : "?";
+        window.location.href = currentUrl + separator + "openExternalBrowser=1";
+      }
     }
-  }
-</script>
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-  const CURRENT_VERSION = '6';
-  if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
-    const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
-    localStorage.clear();
-    sessionStorage.clear();
-    if (supabaseToken) {
-      localStorage.setItem('sb-rpiaifkzowzwgjeglody-auth-token', supabaseToken);
+    const CURRENT_VERSION = '8';
+    if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
+      const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
+      localStorage.clear();
+      sessionStorage.clear();
+      if (supabaseToken) {
+        localStorage.setItem('sb-rpiaifkzowzwgjeglody-auth-token', supabaseToken);
+      }
+      localStorage.setItem('app_version', CURRENT_VERSION);
+      window.location.reload(true);
     }
-    localStorage.setItem('app_version', CURRENT_VERSION);
-    window.location.reload(true);
-  }
-</script>
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,6 +38,28 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    /* ปรับแต่งการแสดงผลชื่อและวิชาในมือถือให้อยู่บรรทัดเดียวและไม่กระทบพื้นหลัง */
+    @media (max-width: 640px) {
+      .profile-header { padding: 20px; gap: 14px; }
+      .student-name { 
+        font-size: 18px !important; 
+        white-space: nowrap !important; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        max-width: 210px;
+      }
+      .profile-card { padding: 20px 16px !important; }
+      .exam-box { padding: 16px; gap: 12px; }
+      .exam-box h3 { 
+        font-size: 15px !important; 
+        white-space: nowrap !important; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        max-width: 170px;
+      }
+      .start-button { padding: 10px 14px !important; font-size: 14px !important; min-width: 90px; }
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -493,7 +513,7 @@
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaWFpZmt6b3d6d2dqZWdsb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODQ2MDAsImV4cCI6MjEwNTg2MDYwMH0.vu4l_EqcfZKEfSHdWn5ZMnl7U8g8S2932knrtrtErPk";
+    const SUPABASE_ANON_KEY = "วางรหัส Anon Key ตัวจริงของคุณตรงนี้";
 
     let supabaseClient = null;
     if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("วางรหัส")) {
