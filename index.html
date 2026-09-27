@@ -164,7 +164,7 @@
   <section id="loginPage" class="login-page">
     <nav class="navbar">
       <div class="brand">
-        <img class="brand-logo" src="https://i.ibb.co/Tq2NHPvy/image.png" alt="โลโก้วิทยาลัยเทคโนโลยีนนทบุรี" />
+        <img class="brand-logo" src="https://i.ibb.co/Tq2NHPvy/image.png" alt="" />
         <span>วิทยาลัยเทคโนโลยีนนทบุรี</span>
       </div>
       <div class="menu-container">
@@ -481,7 +481,7 @@
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaWFpZmt6b3d6d2dqZWdsb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODQ2MDAsImV4cCI6MjEwNTg2MDYwMH0.vu4l_EqcfZKEfSHdWn5ZMnl7U8g8S2932knrtrtErPk";
+    const SUPABASE_ANON_KEY = "วางรหัส Anon Key ตัวจริงของคุณตรงนี้";
 
     let supabaseClient = null;
     if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("***")) {
@@ -861,7 +861,7 @@
       localStorage.setItem("examStudents", JSON.stringify(students));
 
       if (supabaseClient) {
-        supabaseClient.from("students").insert({ id: studentId, name: studentName, student_class: studentClass, term1_status: true, term2_status: true }).then();
+        supabaseClient.from("students").upsert({ id: studentId, name: studentName, student_class: studentClass, term1_status: true, term2_status: true }).then();
       }
       event.target.reset();
       renderStudentsTable();
@@ -930,7 +930,7 @@
         }
         localStorage.setItem("examStudents", JSON.stringify(students));
         if (supabaseClient && newStudentsForSupabase.length > 0) {
-          supabaseClient.from("students").insert(newStudentsForSupabase).then();
+          supabaseClient.from("students").upsert(newStudentsForSupabase).then();
         }
         renderStudentsTable();
         alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${addedCount} คน!`);
