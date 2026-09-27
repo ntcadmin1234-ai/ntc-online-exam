@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '21';
+    const CURRENT_VERSION = '22';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -67,7 +67,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      /* มือถือให้ปุ่มยืดเต็มเหมือนเดิมเพื่อให้กดง่าย */
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
       #examCardBox {
