@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '8';
+    const CURRENT_VERSION = '9';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,17 +38,17 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลชื่อและวิชาในมือถือให้อยู่บรรทัดเดียวและไม่กระทบพื้นหลัง */
+    /* ปรับแต่งการแสดงผลชื่อและวิชาในมือถือให้อยู่บรรทัดเดียว */
     @media (max-width: 640px) {
-      .profile-header { padding: 20px; gap: 14px; }
+      .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
       .student-name { 
-        font-size: 18px !important; 
+        font-size: 20px !important; 
         white-space: nowrap !important; 
         overflow: hidden; 
         text-overflow: ellipsis; 
-        max-width: 210px;
+        max-width: 280px;
       }
-      .profile-card { padding: 20px 16px !important; }
+      .profile-card { padding: 0 !important; }
       .exam-box { padding: 16px; gap: 12px; }
       .exam-box h3 { 
         font-size: 15px !important; 
@@ -151,8 +151,6 @@
     }
     .student-name { margin: 0; font-size: 25px; }
     .student-id { margin: 5px 0 0; color: rgba(255, 255, 255, 0.88); }
-    .status { display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; padding: 5px 11px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); font-size: 13px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #86efac; }
     .profile-content, .admin-card { padding: 32px 42px; }
     .section-title { margin: 0 0 18px; color: #0f172a; font-size: 18px; font-weight: 500; }
     .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 15px; }
@@ -274,7 +272,6 @@
           <div>
             <h2 class="student-name">ชื่อนักเรียน</h2>
             <p class="student-id">รหัสนักเรียน: <span id="profileStudentId">-</span></p>
-            <div class="status"><span class="status-dot"></span>พร้อมเข้าสอบ (ห้อง <span id="profileStudentYearLabel">-</span>)</div>
           </div>
         </div>
         <div class="profile-content">
@@ -513,7 +510,7 @@
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
-    const SUPABASE_ANON_KEY = "วางรหัส Anon Key ตัวจริงของคุณตรงนี้";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaWFpZmt6b3d6d2dqZWdsb2R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyODQ2MDAsImV4cCI6MjEwNTg2MDYwMH0.vu4l_EqcfZKEfSHdWn5ZMnl7U8g8S2932knrtrtErPk";
 
     let supabaseClient = null;
     if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.includes("วางรหัส")) {
@@ -762,7 +759,6 @@
       if (avatarEl && name) avatarEl.textContent = name.charAt(0);
       const classEl = document.getElementById("infoStudentClass");
       if (classEl) classEl.textContent = studentClass;
-      document.getElementById("profileStudentYearLabel").textContent = studentClass;
       loadStudentSubjects(id, studentClass);
       hideAllPages();
       profilePage.classList.remove("hidden");
