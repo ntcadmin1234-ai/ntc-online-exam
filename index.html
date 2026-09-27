@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '11';
+    const CURRENT_VERSION = '12';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ปรับแต่งการแสดงผลในมือถือให้กระชับ ไม่ให้ตัวเลขชั้นปีตกบรรทัด */
+    /* ปรับแต่งการแสดงผลในมือถือให้มีระยะห่างสวยงาม ไม่ชิดขอบการ์ด */
     @media (max-width: 640px) {
       .profile-header { padding: 24px 20px; gap: 16px; flex-direction: column; text-align: center; align-items: center; }
       .student-name { 
@@ -48,7 +48,10 @@
         text-overflow: ellipsis; 
         max-width: 280px;
       }
-      .profile-card { padding: 0 !important; }
+      /* เพิ่ม Padding ด้านในของการ์ดในหน้าจอหลักมือถือ */
+      .profile-card, .admin-card { padding: 20px 16px !important; }
+      .profile-content { padding: 16px 8px !important; }
+      
       .exam-box { padding: 14px; gap: 10px; align-items: flex-start; flex-direction: column; }
       .exam-box div { width: 100%; }
       .exam-box h3 { 
@@ -56,7 +59,6 @@
         white-space: normal !important; 
         word-break: break-word;
       }
-      /* ปรับขนาดตัวหนังสือคำอธิบายวิชาในมือถือให้พอดีบรรทัดเดียว */
       .exam-box p {
         font-size: 12.5px !important;
         white-space: nowrap;
@@ -65,9 +67,11 @@
       }
       .start-button { width: 100% !important; margin-top: 8px !important; padding: 12px !important; font-size: 15px !important; }
       
+      /* เพิ่มระยะห่างและการ์ดข้อสอบไม่ให้ตัวเลือกชิดขอบซ้ายขวา */
+      #examPage .profile-card { padding: 24px 16px !important; }
       #questionContainer label {
         padding: 16px !important;
-        margin-bottom: 4px;
+        margin-bottom: 8px;
         line-height: 1.5;
       }
     }
