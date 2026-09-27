@@ -13,6 +13,8 @@
   />
   <!-- โหลดไลบรารี SheetJS (xlsx) สำหรับอ่านไฟล์ Excel บนบราวเซอร์ -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- โหลดไลบรารี Supabase JS Client สำหรับเชื่อมต่อฐานข้อมูล -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * {
@@ -628,11 +630,44 @@
     }
 
     .question-card {
-      padding: 16px;
+      padding: 20px;
       border: 1px solid #cbd5e1;
-      border-radius: 14px;
+      border-radius: 16px;
       background: #ffffff;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .option-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .option-input-group input[type="radio"] {
+      accent-color: #16a34a;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .student-choice-card {
+      padding: 12px 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .student-choice-card:hover {
+      background: #eff6ff;
+      border-color: #3b82f6;
     }
 
     @media (max-width: 600px) {
@@ -710,23 +745,33 @@
       <p class="subtitle">กรุณากรอกรหัสนักเรียนเพื่อเข้าสู่การสอบ</p>
 
       <form id="studentForm">
-        <label for="studentIdInput">รหัสนักเรียน</label>
+        <div id="loginInputArea">
+          <label for="studentIdInput">รหัสนักเรียน</label>
 
-        <div class="input-wrap">
-          <span class="input-icon">🎓</span>
-          <input
-            id="studentIdInput"
-            type="text"
-            placeholder="กรอกรหัสนักเรียน"
-            maxlength="20"
-            autocomplete="off"
-            required
-          />
+          <div class="input-wrap">
+            <span class="input-icon">🎓</span>
+            <input
+              id="studentIdInput"
+              type="text"
+              placeholder="กรอกรหัสนักเรียน"
+              maxlength="20"
+              autocomplete="off"
+              required
+            />
+          </div>
+        </div>
+
+        <div id="studentChoicesArea" class="hidden" style="margin-top: 15px;">
+          <label style="margin-bottom: 10px; font-weight: 600; color: #2563eb;">พบชื่อที่ตรงกันมากกว่า 1 รายการ กรุณาเลือกชื่อของคุณ:</label>
+          <div id="studentChoicesList" style="max-height: 220px; overflow-y: auto; margin-bottom: 15px;"></div>
+          <button class="secondary-button" type="button" onclick="resetStudentLoginInput()" style="width: 100%; margin: 0;">
+            ← กรอกรหัสนักเรียนใหม่อีกครั้ง
+          </button>
         </div>
 
         <p class="error-message" id="studentErrorMessage"></p>
 
-        <button class="primary-button" type="submit">
+        <button class="primary-button" id="studentSubmitBtn" type="submit">
           เข้าสู่หน้าสอบ
         </button>
       </form>
@@ -1102,7 +1147,7 @@
               </thead>
 
               <tbody id="studentTableBody">
-                <!-- โหลดจาก LocalStorage -->
+                <!-- โหลดจาก LocalStorage / Supabase -->
               </tbody>
             </table>
           </div>
@@ -1174,7 +1219,7 @@
               </thead>
 
               <tbody id="subjectTableBody">
-                <!-- โหลดจาก LocalStorage -->
+                <!-- โหลดจาก LocalStorage / Supabase -->
               </tbody>
             </table>
           </div>
@@ -1242,7 +1287,6 @@
           </div>
         </div>
 
-        <!-- ช่องค้นหารายชื่อและรหัสยาวเต็มตาสำหรับที่ปรึกษา -->
         <div style="margin-bottom: 20px;">
           <input
             id="searchAdvisorInput"
@@ -1311,24 +1355,74 @@
   </section>
 
   <script>
+    // ==========================================================================
+    // กำหนดค่าเชื่อมต่อ Supabase
+    // ==========================================================================
+    const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
+    const SUPABASE_ANON_KEY = "************************************.*******************************************************************************************************************************.****_**************************************";
+
+    let supabaseClient = null;
+    if (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) {
+      try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      } catch (e) {
+        console.error("Supabase client init error:", e);
+      }
+    }
+
     let storedStudents = JSON.parse(localStorage.getItem("examStudents")) || [];
     let storedScores = JSON.parse(localStorage.getItem("examScores")) || [];
-    if (storedScores.length > 0) {
-      const validStudentIds = storedStudents.map(s => s.id);
-      storedScores = storedScores.filter(scoreItem => validStudentIds.includes(scoreItem.studentId));
-      localStorage.setItem("examScores", JSON.stringify(storedScores));
-    }
+    let storedSubjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
 
-    if (!localStorage.getItem("examStudents")) {
-      localStorage.setItem("examStudents", JSON.stringify([]));
-    }
+    async function syncDataFromSupabase() {
+      if (!supabaseClient) return;
 
-    if (!localStorage.getItem("examSubjects")) {
-      localStorage.setItem("examSubjects", JSON.stringify([]));
-    }
+      try {
+        const { data: stdData, error: stdErr } = await supabaseClient.from("students").select("*");
+        if (!stdErr && stdData && stdData.length > 0) {
+          storedStudents = stdData.map(s => ({
+            id: s.id,
+            name: s.name,
+            studentClass: s.student_class,
+            status: s.term1_status !== false && s.status !== false
+          }));
+          localStorage.setItem("examStudents", JSON.stringify(storedStudents));
+        }
 
-    if (!localStorage.getItem("examScores")) {
-      localStorage.setItem("examScores", JSON.stringify([]));
+        const { data: subData, error: subErr } = await supabaseClient.from("subjects").select("*");
+        if (!subErr && subData && subData.length > 0) {
+          storedSubjects = subData.map(sub => ({
+            id: sub.id,
+            name: sub.name,
+            targetYear: sub.target_year,
+            questions: Array.isArray(sub.questions) ? sub.questions : (typeof sub.questions === 'string' ? JSON.parse(sub.questions) : [])
+          }));
+          localStorage.setItem("examSubjects", JSON.stringify(storedSubjects));
+        }
+
+        const { data: scData, error: scErr } = await supabaseClient.from("exam_scores").select("*");
+        if (!scErr && scData && scData.length > 0) {
+          storedScores = scData.map(sc => ({
+            studentId: sc.student_id,
+            name: sc.name,
+            studentClass: sc.student_class,
+            subjectId: sc.subject_id,
+            subjectName: sc.subject_name,
+            score: sc.score
+          }));
+          localStorage.setItem("examScores", JSON.stringify(storedScores));
+        }
+
+        if (!adminPage.classList.contains("hidden")) {
+          renderStudentsTable();
+          renderSubjectsTable();
+        }
+        if (!advisorPage.classList.contains("hidden")) {
+          renderAdvisorScores();
+        }
+      } catch (err) {
+        console.error("Supabase sync error:", err);
+      }
     }
 
     const loginPage = document.getElementById("loginPage");
@@ -1380,9 +1474,17 @@
       localStorage.removeItem("studentId");
       localStorage.removeItem("studentName");
       localStorage.removeItem("studentClass");
-      studentIdInput.value = "";
+      resetStudentLoginInput();
       hideAllPages();
       loginPage.classList.remove("hidden");
+    }
+
+    function resetStudentLoginInput() {
+      studentIdInput.value = "";
+      document.getElementById("loginInputArea").classList.remove("hidden");
+      document.getElementById("studentChoicesArea").classList.add("hidden");
+      document.getElementById("studentSubmitBtn").classList.remove("hidden");
+      studentErrorMessage.style.display = "none";
     }
 
     function showAdminLogin(role) {
@@ -1473,28 +1575,61 @@
       }
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      const found = students.find(s => s.id === studentId);
+      const matchedStudents = students.filter(s => s.id === studentId);
 
-      if (!found) {
+      if (matchedStudents.length === 0) {
         studentErrorMessage.textContent = "ไม่พบรหัสนักเรียนนี้ในระบบ กรุณาติดต่อผู้ดูแลเพื่อเพิ่มรายชื่อ";
         studentErrorMessage.style.display = "block";
         studentIdInput.focus();
         return;
       }
 
-      if (found.status === false) {
-        studentErrorMessage.textContent = "รหัสนักเรียนนี้ถูกระงับสิทธิ์การเข้าสอบ กรุณาติดต่อแอดมิน";
-        studentErrorMessage.style.display = "block";
-        studentIdInput.focus();
+      if (matchedStudents.length > 1) {
+        studentErrorMessage.style.display = "none";
+        document.getElementById("loginInputArea").classList.add("hidden");
+        document.getElementById("studentSubmitBtn").classList.add("hidden");
+        
+        const choicesList = document.getElementById("studentChoicesList");
+        choicesList.innerHTML = "";
+
+        matchedStudents.forEach(found => {
+          const item = document.createElement("div");
+          item.className = "student-choice-card";
+          item.innerHTML = `
+            <div>
+              <strong>${found.name}</strong><br>
+              <span style="font-size: 13px; color: #64748b;">รหัส: ${found.id} | ห้อง: ${found.studentClass}</span>
+            </div>
+            <span style="color: #2563eb; font-weight: 500; font-size: 14px;">เลือก →</span>
+          `;
+          item.onclick = function() {
+            proceedStudentLogin(found);
+          };
+          choicesList.appendChild(item);
+        });
+
+        document.getElementById("studentChoicesArea").classList.remove("hidden");
         return;
       }
 
-      localStorage.setItem("studentId", studentId);
+      const found = matchedStudents[0];
+      proceedStudentLogin(found);
+    });
+
+    function proceedStudentLogin(found) {
+      if (found.status === false) {
+        studentErrorMessage.textContent = "รหัสนักเรียนนี้ถูกระงับสิทธิ์การเข้าสอบ กรุณาติดต่อแอดมิน";
+        studentErrorMessage.style.display = "block";
+        resetStudentLoginInput();
+        return;
+      }
+
+      localStorage.setItem("studentId", found.id);
       localStorage.setItem("studentName", found.name);
       localStorage.setItem("studentClass", found.studentClass);
 
-      loginAsStudent(studentId, found.name, found.studentClass);
-    });
+      loginAsStudent(found.id, found.name, found.studentClass);
+    }
 
     function loginAsStudent(id, name, studentClass) {
       document.getElementById("profileStudentId").textContent = id;
@@ -1532,7 +1667,8 @@
       }
 
       filteredSubjects.forEach(sub => {
-        const existingScore = scores.find(s => s.studentId === studentId && s.subjectId === sub.id);
+        const currentStudentName = localStorage.getItem("studentName");
+        const existingScore = scores.find(s => s.studentId === studentId && s.name === currentStudentName && s.subjectId === sub.id);
         const isDone = !!existingScore;
 
         const box = document.createElement("div");
@@ -1674,13 +1810,30 @@
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
-      if (students.some(s => s.id === studentId)) {
-        alert("รหัสนักเรียนนี้มีอยู่ในระบบแล้ว");
+      const isDuplicate = students.some(s => 
+        s.id === studentId && 
+        s.name.trim().toLowerCase() === studentName.toLowerCase() && 
+        s.studentClass === studentClass
+      );
+
+      if (isDuplicate) {
+        alert("มีรายชื่อนักเรียนที่มีรหัส ชื่อ-นามสกุล และห้องเรียนนี้อยู่ในระบบแล้ว");
         return;
       }
 
-      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true });
+      const newStudent = { id: studentId, name: studentName, studentClass: studentClass, status: true };
+      students.push(newStudent);
       localStorage.setItem("examStudents", JSON.stringify(students));
+
+      if (supabaseClient) {
+        supabaseClient.from("students").insert({
+          id: studentId,
+          name: studentName,
+          student_class: studentClass,
+          term1_status: true,
+          term2_status: true
+        }).then();
+      }
 
       this.reset();
       renderStudentsTable();
@@ -1759,6 +1912,7 @@
 
         let students = JSON.parse(localStorage.getItem("examStudents")) || [];
         let addedCount = 0;
+        let newStudentsForSupabase = [];
 
         const startIndex = startRowInput - 1;
         const endIndex = endRowInput !== "" ? Math.min(parseInt(endRowInput) - 1, rows.length - 1) : rows.length - 1;
@@ -1776,14 +1930,32 @@
 
           if (id && fullName) {
             const studentClass = `${targetYear}/${room}`;
-            if (!students.some(s => s.id === id)) {
+            const exists = students.some(s => 
+              s.id === id && 
+              s.name.trim().toLowerCase() === fullName.toLowerCase() && 
+              s.studentClass === studentClass
+            );
+
+            if (!exists) {
               students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
+              newStudentsForSupabase.push({
+                id: id,
+                name: fullName,
+                student_class: studentClass,
+                term1_status: true,
+                term2_status: true
+              });
               addedCount++;
             }
           }
         }
 
         localStorage.setItem("examStudents", JSON.stringify(students));
+
+        if (supabaseClient && newStudentsForSupabase.length > 0) {
+          supabaseClient.from("students").insert(newStudentsForSupabase).then();
+        }
+
         renderStudentsTable();
         alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${addedCount} คน!`);
       } catch (error) {
@@ -1807,7 +1979,7 @@
         return;
       }
 
-      filtered.forEach(s => {
+      filtered.forEach((s) => {
         const isEnabled = s.status !== false;
         const row = tbody.insertRow();
         row.innerHTML = `
@@ -1815,36 +1987,51 @@
           <td>${s.name}</td>
           <td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${s.studentClass}</span></td>
           <td>
-            <button type="button" class="${isEnabled ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleStudentStatus('${s.id}')">
+            <button type="button" class="${isEnabled ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleStudentStatus('${s.id}', '${s.name}', '${s.studentClass}')">
               ${isEnabled ? '✓ มีสิทธิ์สอบ' : '✕ ไม่มีสิทธิ์'}
             </button>
           </td>
-          <td><button class="delete-button" type="button" onclick="deleteStudent('${s.id}')">ลบ</button></td>
+          <td><button class="delete-button" type="button" onclick="deleteStudent('${s.id}', '${s.name}', '${s.studentClass}')">ลบ</button></td>
         `;
       });
     }
 
-    function toggleStudentStatus(id) {
+    function toggleStudentStatus(id, name, studentClass) {
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
+      let updatedStatus = true;
       students = students.map(s => {
-        if (s.id === id) {
+        if (s.id === id && s.name === name && s.studentClass === studentClass) {
           s.status = s.status === false ? true : false;
+          updatedStatus = s.status;
         }
         return s;
       });
       localStorage.setItem("examStudents", JSON.stringify(students));
+
+      if (supabaseClient) {
+        supabaseClient.from("students").update({
+          term1_status: updatedStatus,
+          term2_status: updatedStatus
+        }).eq("id", id).eq("name", name).eq("student_class", studentClass).then();
+      }
+
       renderStudentsTable();
     }
 
-    function deleteStudent(id) {
-      if (confirm("ต้องการลบนักเรียนคนนี้ใช่หรือไม่?")) {
+    function deleteStudent(id, name, studentClass) {
+      if (confirm(`ต้องการลบรายชื่อนักเรียน (${name}) ใช่หรือไม่?`)) {
         let students = JSON.parse(localStorage.getItem("examStudents")) || [];
-        students = students.filter(s => s.id !== id);
+        students = students.filter(s => !(s.id === id && s.name === name && s.studentClass === studentClass));
         localStorage.setItem("examStudents", JSON.stringify(students));
         
         let scores = JSON.parse(localStorage.getItem("examScores")) || [];
-        scores = scores.filter(s => s.studentId !== id);
+        scores = scores.filter(s => !(s.studentId === id && s.name === name && s.studentClass === studentClass));
         localStorage.setItem("examScores", JSON.stringify(scores));
+
+        if (supabaseClient) {
+          supabaseClient.from("students").delete().eq("id", id).eq("name", name).eq("student_class", studentClass).then();
+          supabaseClient.from("exam_scores").delete().eq("student_id", id).eq("name", name).eq("student_class", studentClass).then();
+        }
 
         renderStudentsTable();
       }
@@ -1860,9 +2047,29 @@
       if (confirm("⚠️ คำเตือน: คุณต้องการลบรายชื่อนักเรียนทั้งหมดและข้อมูลคะแนนสอบทั้งหมดใช่หรือไม่?")) {
         localStorage.setItem("examStudents", JSON.stringify([]));
         localStorage.setItem("examScores", JSON.stringify([]));
+
+        if (supabaseClient) {
+          supabaseClient.from("students").delete().neq("id", "___dummy___").then();
+          supabaseClient.from("exam_scores").delete().neq("student_id", "___dummy___").then();
+        }
+
         renderStudentsTable();
         alert("ลบรายชื่อนักเรียนทั้งหมดเรียบร้อยแล้ว!");
       }
+    }
+
+    function updateQuestionNumbers() {
+      const cards = document.querySelectorAll(".question-card");
+      cards.forEach((card, index) => {
+        const titleEl = card.querySelector(".question-number-label");
+        if (titleEl) {
+          titleEl.textContent = `ข้อที่ ${index + 1}`;
+        }
+        const radios = card.querySelectorAll("input[type='radio']");
+        radios.forEach(radio => {
+          radio.name = `correct_ans_${index}`;
+        });
+      });
     }
 
     function addQuestionField(qData = null) {
@@ -1878,30 +2085,47 @@
       const ans = qData ? qData.ans : "ก";
 
       card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <label style="margin: 0;">โจทย์คำถาม</label>
-          <button type="button" class="delete-button" onclick="this.closest('.question-card').remove()">ลบข้อนี้</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="question-number-label" style="font-weight: 600; color: #2563eb; font-size: 17px;">ข้อที่ 1</span>
+          <button type="button" class="delete-button" onclick="this.closest('.question-card').remove(); updateQuestionNumbers();">ลบข้อนี้</button>
         </div>
-        <div style="margin-bottom: 10px;">
+        <div style="margin-bottom: 15px;">
           <input type="text" class="q-text" placeholder="ระบุโจทย์คำถาม" value="${qText}" required />
         </div>
-        <div class="info-grid">
-          <div><label>ตัวเลือก ก</label><input type="text" class="opt-a" placeholder="ตัวเลือก ก" value="${optA}" required /></div>
-          <div><label>ตัวเลือก ข</label><input type="text" class="opt-b" placeholder="ตัวเลือก ข" value="${optB}" required /></div>
-          <div><label>ตัวเลือก ค</label><input type="text" class="opt-c" placeholder="ตัวเลือก ค" value="${optC}" required /></div>
-          <div><label>ตัวเลือก ง</label><input type="text" class="opt-d" placeholder="ตัวเลือก ง" value="${optD}" required /></div>
-        </div>
-        <div>
-          <label>เฉลยคำตอบที่ถูกต้อง</label>
-          <select class="q-ans">
-            <option value="ก" ${ans === 'ก' ? 'selected' : ''}>ก</option>
-            <option value="ข" ${ans === 'ข' ? 'selected' : ''}>ข</option>
-            <option value="ค" ${ans === 'ค' ? 'selected' : ''}>ค</option>
-            <option value="ง" ${ans === 'ง' ? 'selected' : ''}>ง</option>
-          </select>
+        
+        <div class="info-grid" style="margin-bottom: 15px;">
+          <div>
+            <label style="margin-bottom: 6px;">ตัวเลือก ก</label>
+            <div class="option-input-group">
+              <input type="radio" name="temp_group" value="ก" ${ans === 'ก' ? 'checked' : ''} title="คลิกเพื่อเลือกเป็นเฉลย" required />
+              <input type="text" class="opt-a" placeholder="ตัวเลือก ก" value="${optA}" required />
+            </div>
+          </div>
+          <div>
+            <label style="margin-bottom: 6px;">ตัวเลือก ข</label>
+            <div class="option-input-group">
+              <input type="radio" name="temp_group" value="ข" ${ans === 'ข' ? 'checked' : ''} title="คลิกเพื่อเลือกเป็นเฉลย" required />
+              <input type="text" class="opt-b" placeholder="ตัวเลือก ข" value="${optB}" required />
+            </div>
+          </div>
+          <div>
+            <label style="margin-bottom: 6px;">ตัวเลือก ค</label>
+            <div class="option-input-group">
+              <input type="radio" name="temp_group" value="ค" ${ans === 'ค' ? 'checked' : ''} title="คลิกเพื่อเลือกเป็นเฉลย" required />
+              <input type="text" class="opt-c" placeholder="ตัวเลือก ค" value="${optC}" required />
+            </div>
+          </div>
+          <div>
+            <label style="margin-bottom: 6px;">ตัวเลือก ง</label>
+            <div class="option-input-group">
+              <input type="radio" name="temp_group" value="ง" ${ans === 'ง' ? 'checked' : ''} title="คลิกเพื่อเลือกเป็นเฉลย" required />
+              <input type="text" class="opt-d" placeholder="ตัวเลือก ง" value="${optD}" required />
+            </div>
+          </div>
         </div>
       `;
       container.appendChild(card);
+      updateQuestionNumbers();
     }
 
     document.getElementById("subjectAddForm").addEventListener("submit", function (event) {
@@ -1919,16 +2143,28 @@
       }
 
       let questionsArray = [];
+      let isValid = true;
+
       questionCards.forEach(card => {
-        questionsArray.push({
-          text: card.querySelector(".q-text").value,
-          a: card.querySelector(".opt-a").value,
-          b: card.querySelector(".opt-b").value,
-          c: card.querySelector(".opt-c").value,
-          d: card.querySelector(".opt-d").value,
-          ans: card.querySelector(".q-ans").value
-        });
+        const checkedRadio = card.querySelector("input[type='radio']:checked");
+        if (!checkedRadio) {
+          isValid = false;
+        } else {
+          questionsArray.push({
+            text: card.querySelector(".q-text").value,
+            a: card.querySelector(".opt-a").value,
+            b: card.querySelector(".opt-b").value,
+            c: card.querySelector(".opt-c").value,
+            d: card.querySelector(".opt-d").value,
+            ans: checkedRadio.value
+          });
+        }
       });
+
+      if (!isValid) {
+        alert("กรุณาเลือกเฉลยคำตอบที่ถูกต้องให้ครบทุกข้อ");
+        return;
+      }
 
       let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
 
@@ -1939,6 +2175,20 @@
           }
           return sub;
         });
+
+        if (supabaseClient) {
+          if (editId !== subjectCode) {
+            supabaseClient.from("subjects").delete().eq("id", editId).then();
+          }
+          supabaseClient.from("subjects").upsert({
+            id: subjectCode,
+            name: subjectName,
+            target_year: targetYear,
+            term: '1',
+            questions: questionsArray
+          }).then();
+        }
+
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
         if (subjects.some(sub => sub.id === subjectCode)) {
@@ -1946,6 +2196,17 @@
           return;
         }
         subjects.push({ id: subjectCode, name: subjectName, targetYear: targetYear, questions: questionsArray });
+
+        if (supabaseClient) {
+          supabaseClient.from("subjects").upsert({
+            id: subjectCode,
+            name: subjectName,
+            target_year: targetYear,
+            term: '1',
+            questions: questionsArray
+          }).then();
+        }
+
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
 
@@ -1998,6 +2259,11 @@
         let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
         subjects = subjects.filter(s => s.id !== id);
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
+
+        if (supabaseClient) {
+          supabaseClient.from("subjects").delete().eq("id", id).then();
+        }
+
         resetSubjectForm();
         renderSubjectsTable();
       }
@@ -2101,9 +2367,24 @@
     }
 
     function submitExam() {
-      let score = 0;
       const total = currentExamData.questions.length;
+      let unanswered = [];
 
+      for (let i = 0; i < total; i++) {
+        if (!studentAnswers[i]) {
+          unanswered.push(i + 1);
+        }
+      }
+
+      if (unanswered.length > 0) {
+        alert(`คุณยังทำข้อสอบไม่ครบทุกข้อครับ!\n\nกรุณาตอบข้อที่ยังไม่ได้ทำ: ข้อที่ ${unanswered.join(", ")}`);
+        // พาไปที่ข้อที่ยังไม่ได้ทำข้อแรกสุดที่พบ
+        currentQuestionIndex = unanswered[0] - 1;
+        renderQuestion();
+        return;
+      }
+
+      let score = 0;
       currentExamData.questions.forEach((q, index) => {
         if (studentAnswers[index] === q.ans) {
           score++;
@@ -2117,7 +2398,7 @@
       const studentClass = localStorage.getItem("studentClass");
 
       let scores = JSON.parse(localStorage.getItem("examScores")) || [];
-      scores = scores.filter(s => !(s.studentId === studentId && s.subjectId === currentExamData.id));
+      scores = scores.filter(s => !(s.studentId === studentId && s.name === name && s.studentClass === studentClass && s.subjectId === currentExamData.id));
       scores.push({
         studentId: studentId,
         name: name,
@@ -2127,6 +2408,26 @@
         score: scoreText
       });
       localStorage.setItem("examScores", JSON.stringify(scores));
+
+      if (supabaseClient) {
+        supabaseClient.from("exam_scores")
+          .delete()
+          .eq("student_id", studentId)
+          .eq("name", name)
+          .eq("student_class", studentClass)
+          .eq("subject_id", currentExamData.id)
+          .then(() => {
+            supabaseClient.from("exam_scores").insert({
+              student_id: studentId,
+              name: name,
+              student_class: studentClass,
+              subject_id: currentExamData.id,
+              subject_name: currentExamData.name,
+              term: '1',
+              score: scoreText
+            }).then();
+          });
+      }
 
       alert(`ส่งข้อสอบเรียบร้อยแล้ว!\nคะแนนที่คุณทำได้: ${scoreText}`);
       loginAsStudent(studentId, name, studentClass);
@@ -2153,16 +2454,34 @@
       }
     }
 
-    const savedStudentId = localStorage.getItem("studentId");
-    if (savedStudentId) {
-      const students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      const found = students.find(s => s.id === savedStudentId);
-      if (found && found.status !== false) {
-        loginAsStudent(found.id, found.name, found.studentClass);
-      } else {
-        goToStudentMenu();
+    window.addEventListener("DOMContentLoaded", async function () {
+      await syncDataFromSupabase();
+
+      const savedStudentId = localStorage.getItem("studentId");
+      const savedStudentName = localStorage.getItem("studentName");
+      const savedStudentClass = localStorage.getItem("studentClass");
+      
+      if (savedStudentId && savedStudentName && savedStudentClass) {
+        const students = JSON.parse(localStorage.getItem("examStudents")) || [];
+        const found = students.find(s => s.id === savedStudentId && s.name === savedStudentName && s.studentClass === savedStudentClass);
+        if (found && found.status !== false) {
+          loginAsStudent(found.id, found.name, found.studentClass);
+          return;
+        }
       }
-    }
+
+      if (localStorage.getItem("adminLoggedIn") === "true") {
+        showAdminPage("students");
+        return;
+      }
+
+      if (localStorage.getItem("advisorLoggedIn") === "true") {
+        showAdvisorPage();
+        return;
+      }
+
+      goToStudentMenu();
+    });
   </script>
 </body>
 </html>
