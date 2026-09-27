@@ -1,6 +1,18 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <script>
+  // ตรวจจับว่าเปิดผ่านแอป LINE หรือไม่
+  if (navigator.userAgent.includes("Line")) {
+    // ดึง URL ปัจจุบัน
+    const currentUrl = window.location.href;
+    // สร้างลิงก์บังคับเปิดผ่าน Chrome/Safari ภายนอก
+    if (!currentUrl.includes("openExternalBrowser=1")) {
+      const separator = currentUrl.includes("?") ? "&" : "?";
+      window.location.href = currentUrl + separator + "openExternalBrowser=1";
+    }
+  }
+</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
