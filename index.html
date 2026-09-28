@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '25';
+    const CURRENT_VERSION = '26';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -590,15 +590,19 @@
 
         const { data: scData, error: scErr } = await supabaseClient.from("exam_scores").select("*");
         if (!scErr && scData && scData.length > 0) {
-          storedScores = scData.map(sc => ({
-            studentId: sc.student_id,
-            name: sc.name,
-            studentClass: sc.student_class,
-            subjectId: sc.subject_id,
-            subjectName: sc.subject_name,
-            score: sc.score
-          }));
-          localStorage.setItem("examScores", JSON.stringify(scData));
+          storedScores = scData.map(sc => {
+            const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
+            const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
+            return {
+              studentId: sc.student_id || (matchedStudent ? matchedStudent.id : "-"),
+              name: sc.name,
+              studentClass: sc.student_class || (matchedStudent ? matchedStudent.studentClass : "-"),
+              subjectId: sc.subject_id,
+              subjectName: sc.subject_name || (matchedSubject ? matchedSubject.name : "-"),
+              score: sc.score
+            };
+          });
+          localStorage.setItem("examScores", JSON.stringify(storedScores));
         }
 
         if (!adminPage.classList.contains("hidden")) {
