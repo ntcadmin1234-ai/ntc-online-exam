@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '26';
+    const CURRENT_VERSION = '27';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -752,7 +752,8 @@
       const matchedStudents = students.filter(s => s.id === studentId);
 
       if (matchedStudents.length === 0) {
-        studentErrorMessage.textContent = "ไม่พบรหัสนักเรียนนี้ในระบบ กรุณาติดต่อผู้ดูแลเพื่อเพิ่มรายชื่อ";
+        // เปลี่ยนข้อความแจ้งเตือนที่นี่ตามต้องการ
+        studentErrorMessage.textContent = "กรุณาชำระค่าเทอมให้เป็นปัจจุบัน ถ้าชำระแล้วโปรดรอรายชื่ออัพเดท";
         studentErrorMessage.style.display = "block";
         studentIdInput.focus();
         return;
