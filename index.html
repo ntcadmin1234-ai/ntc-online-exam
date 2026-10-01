@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '28';
+    const CURRENT_VERSION = '29';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -758,7 +758,6 @@
         return;
       }
 
-      // บังคับแสดงรายการเลือกชื่อเสมอ (ไม่ว่าจะเจอ 1 หรือหลายคน)
       studentErrorMessage.style.display = "none";
       document.getElementById("loginInputArea").classList.add("hidden");
       document.getElementById("studentSubmitBtn").classList.add("hidden");
@@ -871,7 +870,16 @@
       filterSubject.innerHTML = '<option value="">-- ทุกรายวิชา --</option>';
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      [...new Set(students.map(s => s.studentClass))].forEach(cls => {
+      
+      // เรียงลำดับห้องเรียนตามตัวเลข (เช่น 1/1, 1/2, ... 1/10 ...)
+      const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
+        const partsA = a.split('/').map(Number);
+        const partsB = b.split('/').map(Number);
+        if (partsA[0] !== partsB[0]) return partsA[0] - partsB[0];
+        return (partsA[1] || 0) - (partsB[1] || 0);
+      });
+
+      sortedClasses.forEach(cls => {
         const opt = document.createElement("option");
         opt.value = cls; opt.textContent = cls;
         filterClass.appendChild(opt);
