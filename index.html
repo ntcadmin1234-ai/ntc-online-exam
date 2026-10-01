@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '37';
+    const CURRENT_VERSION = '38';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* หน้าจอโหลดพร้อมสีน้ำเงินตามภาพตัวอย่าง */
+    /* หน้าจอโหลด: ปรับความสูงเส้นเพิ่มขึ้น และความกว้างสั้นลง */
     #initialLoader {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
@@ -52,10 +52,10 @@
       transition: opacity 0.4s ease;
     }
     .loader-bar-wrap {
-      width: 180px;
-      height: 4px;
+      width: 130px; /* ปรับความกว้างให้สั้นลง */
+      height: 7px;  /* ปรับความหนาสูงขึ้น */
       background: #e2e8f0;
-      border-radius: 4px;
+      border-radius: 6px;
       overflow: hidden;
     }
     .loader-bar-fill {
@@ -273,7 +273,7 @@
 </head>
 
 <body>
-  <!-- หน้าจอโหลดพร้อมสีน้ำเงินตามภาพ -->
+  <!-- หน้าจอโหลด: ขีดสั้นลง หนาขึ้น -->
   <div id="initialLoader">
     <div class="loader-bar-wrap">
       <div class="loader-bar-fill"></div>
