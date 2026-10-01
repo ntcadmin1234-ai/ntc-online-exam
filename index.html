@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '42';
+    const CURRENT_VERSION = '43';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,7 +38,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    /* ล็อกหน้าจอเฉพาะตอนกำลังโหลด */
+    /* ล็อกหน้าจอและกำหนดพื้นหลังเต็มพื้นที่แบบ dvh ป้องกันขอบขาว */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      overflow-x: hidden;
+      font-family: "Kanit", sans-serif;
+      color: #1e293b;
+      background: radial-gradient(circle at 10% 10%, rgba(147, 197, 253, 0.5), transparent 30%), radial-gradient(circle at 90% 90%, rgba(196, 181, 253, 0.4), transparent 32%), #f8fafc;
+      background-attachment: fixed;
+    }
+
     body.loading-active {
       overflow: hidden !important;
       position: fixed !important;
@@ -155,14 +168,6 @@
       }
     }
 
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: "Kanit", sans-serif;
-      color: #1e293b;
-      background: radial-gradient(circle at 10% 10%, rgba(147, 197, 253, 0.5), transparent 30%), radial-gradient(circle at 90% 90%, rgba(196, 181, 253, 0.4), transparent 32%), #f8fafc;
-    }
     button, input, select, textarea { font-family: inherit; }
     .hidden { display: none !important; }
     section { animation: fadeIn 0.3s ease-in-out; }
@@ -1353,7 +1358,7 @@
     window.addEventListener("DOMContentLoaded", async () => {
       await syncDataFromSupabase();
 
-      // ปิดหน้าจอโหลดหลังจากทำสเตปเสร็จสิ้น (~4.5 วินาที) และคืนค่าพื้นหลังเดิมให้หน้าล็อกอิน
+      // ปิดหน้าจอโหลดหลังจากทำสเตปเสร็จสิ้น (~4.5 วินาที) และปลดล็อกการเลื่อนจอเพื่อให้โทนสีไล่เฉดแสดงเต็มจอสวยงาม
       setTimeout(() => {
         const loader = document.getElementById("initialLoader");
         if (loader) {
