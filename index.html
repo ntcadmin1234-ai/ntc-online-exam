@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '29';
+    const CURRENT_VERSION = '33';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -38,6 +38,40 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
+    /* หน้าจอโหลดแบบสเตป (ขีดแรกค้าง 2 วิ, ขีดสองค้าง 1 วิ) */
+    #initialLoader {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+      transition: opacity 0.4s ease;
+    }
+    .loader-bar-wrap {
+      width: 180px;
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .loader-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+      transform: translateX(-100%);
+      animation: stepLoading 4s ease forwards;
+    }
+    @keyframes stepLoading {
+      0% { transform: translateX(-100%); }
+      25% { transform: translateX(-65%); }    /* วิ่งถึงขีดแรก */
+      75% { transform: translateX(-65%); }    /* ค้างไว้ที่ขีดแรก (2 วินาที) */
+      85% { transform: translateX(-20%); }    /* วิ่งถึงขีดสอง */
+      92% { transform: translateX(-20%); }    /* ค้างไว้ที่ขีดสอง (1 วินาที) */
+      100% { transform: translateX(0); }      /* วิ่งจนจบและหายไป */
+    }
+
     /* ปรับแต่งปุ่มเริ่มทำข้อสอบในคอมพิวเตอร์ให้พอดี ไม่ยาวเกินไป */
     .start-button {
       background: linear-gradient(135deg, #0ea5e9, #4f46e5) !important;
@@ -230,6 +264,13 @@
 </head>
 
 <body>
+  <!-- หน้าจอโหลดตามสเตป -->
+  <div id="initialLoader">
+    <div class="loader-bar-wrap">
+      <div class="loader-bar-fill"></div>
+    </div>
+  </div>
+
   <!-- หน้าเข้าสู่ระบบนักเรียน -->
   <section id="loginPage" class="login-page">
     <nav class="navbar">
@@ -871,7 +912,6 @@
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
-      // เรียงลำดับห้องเรียนตามตัวเลข (เช่น 1/1, 1/2, ... 1/10 ...)
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
         const partsA = a.split('/').map(Number);
         const partsB = b.split('/').map(Number);
@@ -1076,7 +1116,7 @@
           supabaseClient.from("exam_scores").delete().neq("student_id", "___dummy___").then();
         }
         renderStudentsTable();
-        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้ว!");
+        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้วกู");
       }
     }
 
@@ -1291,6 +1331,15 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       await syncDataFromSupabase();
+
+      // ปิดหน้าจอโหลดหลังจากทำสเตปเสร็จสิ้น (รวมเวลาวิ่งและค้างรวม ~4 วินาที)
+      setTimeout(() => {
+        const loader = document.getElementById("initialLoader");
+        if (loader) {
+          loader.style.opacity = "0";
+          setTimeout(() => loader.remove(), 400);
+        }
+      }, 4000);
 
       const savedStudentId = localStorage.getItem("studentId");
       const savedStudentName = localStorage.getItem("studentName");
