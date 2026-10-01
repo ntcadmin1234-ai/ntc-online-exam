@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '27';
+    const CURRENT_VERSION = '28';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -268,7 +268,7 @@
           </div>
         </div>
         <div id="studentChoicesArea" class="hidden" style="margin-top: 15px;">
-          <label style="margin-bottom: 10px; font-weight: 600; color: #2563eb;">พบชื่อที่ตรงกันมากกว่า 1 รายการ กรุณาเลือกชื่อของคุณ:</label>
+          <label style="margin-bottom: 10px; font-weight: 600; color: #2563eb;">พบชื่อที่ตรงกัน กรุณาเลือกชื่อของคุณ:</label>
           <div id="studentChoicesList" style="max-height: 220px; overflow-y: auto; margin-bottom: 15px;"></div>
           <button class="secondary-button" type="button" onclick="resetStudentLoginInput()" style="width: 100%; margin: 0;">← กรอกรหัสนักเรียนใหม่อีกครั้ง</button>
         </div>
@@ -752,30 +752,26 @@
       const matchedStudents = students.filter(s => s.id === studentId);
 
       if (matchedStudents.length === 0) {
-        // เปลี่ยนข้อความแจ้งเตือนที่นี่ตามต้องการ
         studentErrorMessage.textContent = "กรุณาชำระค่าเทอมให้เป็นปัจจุบัน ถ้าชำระแล้วโปรดรอรายชื่ออัพเดท";
         studentErrorMessage.style.display = "block";
         studentIdInput.focus();
         return;
       }
 
-      if (matchedStudents.length > 1) {
-        studentErrorMessage.style.display = "none";
-        document.getElementById("loginInputArea").classList.add("hidden");
-        document.getElementById("studentSubmitBtn").classList.add("hidden");
-        const choicesList = document.getElementById("studentChoicesList");
-        choicesList.innerHTML = "";
-        matchedStudents.forEach(found => {
-          const item = document.createElement("div");
-          item.className = "student-choice-card";
-          item.innerHTML = `<div><strong>${found.name}</strong><br><span style="font-size: 13px; color: #64748b;">รหัส: ${found.id} | ห้อง: ${found.studentClass}</span></div><span style="color: #2563eb; font-weight: 500;">เลือก →</span>`;
-          item.onclick = () => proceedStudentLogin(found);
-          choicesList.appendChild(item);
-        });
-        document.getElementById("studentChoicesArea").classList.remove("hidden");
-        return;
-      }
-      proceedStudentLogin(matchedStudents[0]);
+      // บังคับแสดงรายการเลือกชื่อเสมอ (ไม่ว่าจะเจอ 1 หรือหลายคน)
+      studentErrorMessage.style.display = "none";
+      document.getElementById("loginInputArea").classList.add("hidden");
+      document.getElementById("studentSubmitBtn").classList.add("hidden");
+      const choicesList = document.getElementById("studentChoicesList");
+      choicesList.innerHTML = "";
+      matchedStudents.forEach(found => {
+        const item = document.createElement("div");
+        item.className = "student-choice-card";
+        item.innerHTML = `<div><strong>${found.name}</strong><br><span style="font-size: 13px; color: #64748b;">รหัส: ${found.id} | ห้อง: ${found.studentClass}</span></div><span style="color: #2563eb; font-weight: 500;">เลือก →</span>`;
+        item.onclick = () => proceedStudentLogin(found);
+        choicesList.appendChild(item);
+      });
+      document.getElementById("studentChoicesArea").classList.remove("hidden");
     });
 
     function proceedStudentLogin(found) {
