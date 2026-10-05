@@ -36,8 +36,6 @@
   />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- โหลด CreateJS สำหรับรันแอนิเมชันจาก Adobe Animate -->
-  <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
 
   <style>
     /* ตั้งค่าพื้นฐานและโทนสีไล่เฉดเต็มจอ */
@@ -61,7 +59,7 @@
       width: 100% !important;
     }
 
-    /* หน้าจอโหลด: คลุมเต็มพื้นที่จอ มีเรืออยู่เหนือแถบโหลด */
+    /* หน้าจอโหลด: คลุมเต็มพื้นที่จอ มีรูป GIF เรืออยู่เหนือแถบโหลด */
     #initialLoader {
       position: fixed !important;
       top: 0 !important; left: 0 !important;
@@ -72,11 +70,16 @@
       flex-direction: column !important;
       justify-content: center !important;
       align-items: center !important;
-      gap: 10px !important;
+      gap: 12px !important;
       z-index: 2147483647 !important;
       transition: opacity 0.4s ease;
       touch-action: none;
       pointer-events: all;
+    }
+    .loader-ship-gif {
+      width: 150px;
+      height: auto;
+      display: block;
     }
     .loader-bar-wrap {
       width: 155px;
@@ -332,9 +335,9 @@
 </head>
 
 <body class="lock-scroll">
-  <!-- หน้าจอโหลด: มีแอนิเมชันเรืออยู่เหนือแถบโหลด -->
+  <!-- หน้าจอโหลด: ใช้รูป GIF เรือจาก GitHub ของคุณโดยตรง -->
   <div id="initialLoader">
-    <canvas id="canvasAnimation" width="200" height="200" style="background-color:#FFFFFF; display:block;"></canvas>
+    <img class="loader-ship-gif" src="https://raw.githubusercontent.com/ntcadmin1234-ai/ntc-online-exam/main/เรือ-200x200.gif" alt="เรือกำลังแล่น" />
     <div class="loader-bar-wrap">
       <div class="loader-bar-fill"></div>
     </div>
@@ -654,98 +657,6 @@
       </section>
     </main>
   </section>
-
-  <!-- โค้ดแอนิเมชันเรือขยับจาก Adobe Animate -->
-  <script>
-    var canvas, exportRoot, stage, exportRootInstance, fnStartAnimation;
-    (function (cjs, an) {
-      var p;
-      var lib={};var ss={};var img={};
-      lib.ssMetadata = [];
-
-      lib.AnMovieClip = function(){
-        this.actionFrames = [];
-        this.ignorePause = false;
-        this.gotoAndPlay = function(positionOrLabel){
-          cjs.MovieClip.prototype.gotoAndPlay.call(this,positionOrLabel);
-        }
-        this.play = function(){
-          cjs.MovieClip.prototype.play.call(this);
-        }
-        this.gotoAndStop = function(positionOrLabel){
-          cjs.MovieClip.prototype.gotoAndStop.call(this,positionOrLabel);
-        }
-        this.stop = function(){
-          cjs.MovieClip.prototype.stop.call(this);
-        }
-      }.prototype = p = new cjs.MovieClip();
-
-      lib.Tween1 = function(mode,startPosition,loop,reversed) {
-        if (loop == null) { loop = true; }
-        if (reversed == null) { reversed = false; }
-        var props = new Object();
-        props.mode = mode;
-        props.startPosition = startPosition;
-        props.labels = {};
-        props.loop = loop;
-        props.reversed = reversed;
-        cjs.MovieClip.apply(this,[props]);
-
-        this.shape = new cjs.Shape();
-        this.shape.graphics.f("#283891").s().p("AmQFlQiIguhshuQgvgwgqg8QhFh2ichoQjqh7gehgIAQAAIgGgbIAHAAQBaByAygPIAAgLIAIAAIAAg1IBCALIBuASIB2ARIAAgJQAZgdAcAdIABgQIgHgBIABgLICBAWIElAxIAAAMIgKgBIAAAaIAFAAIAAADQEAAED2gEIAAgjIgEAAIAAgOIFEAAIAAghIgNAAIAAgKQBkgFDjgaIAAgMIAdgBIAAgYIgHABIAAgLIFrgxIAAAKIgJACIABAaIAIgCIAAAaQhECKAcAeQAeASgBAlQhIAcgyAyQ15DNnsjjQDLEgZojKQgbArgQA4QgPBBgQAxQgrCJgoATQlXBTlAAAQlAAAkshTgAglilIAvAAIAAgoIgvAAgAhZilIAsAAIAAgoIgsAAgAARilIAwgCIAAgmIgwAAgAiSinIAxACIAAgoIgxAAgABJinIApgCIAAgkIgpAAgAjFiqIAoACIAAglIgoAAgACLiqIAigCIAAghIgiAAgAj/iwIAzAFIAAgiIgzAAgAC1itIAQgBIAAgfIgQAAgAkqi2IAhAFIAAgcIghAAgADWjVIArgCIAAgoIgrAAgAEOjYIArgCIAAglIgrAAgAFEjbIAmgCIAAgiIgmAAgAF2jeIAvgDIAAgeIgvAAgAljjjIAqADIAAgbIgqgHgAGwjhIApgDIAAgbIgpAAgAHjjkIAggCIAAgZIggAAgAmWjoIArAEIAAggIgrgHgAnJjuIAsAFIAAgjIgsgIgAn5j1IAnAFIAAglIgmgHgAtXj4IA1AIIAAgxIg1gIgAosj9IArAHIAAgoIgrgHgAuGj/IAoAGIAAgxIgogGgApekGIAtAIIAAgoIgsgIgAu0kHIAmAHIAAgyIgmgFgAqQkRIApAJIAAgnIgpgHgAsIkJIANAAIAAgTIgNgCgAvrkRIAsAIIAAgwIgsgHgAIUktIAAAjIAxgEIAAgjgAJOkyIAAAjIAsgEIAAgjgAq/kcIApAKIAAglIgngHgAwXkcQANAEAWAFIAAguIgjgFgAKEk3IAAAjIAwgEIAAgjgAK8k8IAAAjIAtgEIAAgjgALzlBIAAAjIAkgDIAAgjgAMjlFIAAAjIAjgEIAAgjgANql9IAAAZIAxgDIAAgdgAOjmFIAAAeIA2gEIAAghgAPhmNIAAAhIAxgFIAAgjgAQcmVIAAAjIArgGIgBgjgARQmcIABAiIAxgJIgBgggASKmkIABAfIArgKIAAgbgAPVDJQAMgoAJgyQAgAaAAAQQAAAZgCAXQgIBNglA4QgNAKhDAFQAsguAehmg");
-        this.shape.setTransform(0.025,0.0375);
-        this.timeline.addTween(cjs.Tween.get(this.shape).wait(1));
-
-        this.shape_1 = new cjs.Shape();
-        this.shape_1.graphics.f("#283891").s().p("ADRNvIAAlJIo4A+IAAgwQA+AAL8hWIAAAtIjoAZIAAFLgANVMNIAAkXIj+AnQArgtg8gTIH/g6IAAAQIgSAGIAAAcIjDAdIAAEbgArGMEIAAkqIgkAEIgWACIkvAiIgDgcQAjAAG2gyIADAaIhZAKIADAaIhZAKIAAEsgAk/EAIgHABQgKAAgHgHQgHgHAAgKQAAgKAHgIQAHgHAKAAQAKAAAHAHQAEAEACAEIAAABILmASIAFAAIAFABIAFADQAEAEAAAGQAAAGgEAEQgEAFgGAAQgEAAgEgCQAnBQgWBtIsPBbQA0j/gpgmgAwwE0IgEAAQgGAAgFgEQgEgEgBgGQgBgGAEgEQADgEAGAAQAGAAAFAEIAEAEIAAABIGwALIADgBIADABIADABQADADAAAEQABADgDACQgCADgDAAIgFgBQAcAugGA/InAA1QANiUgagVgAJDDoIgCAAQgEADgEAAQgGAAgEgEQgDgEAAgFQAAgGADgEQAEgDAGAAIABAAIAEAAIHlgRIAAAVIgKAAQgZBnAnBeInVAxQAeiFgthegAwrEVQAnh3gVhsIgCAAQgFAAgFgFQgFgEAAgFQBgGADgFQAEgEAGAAQAGAAAEAEIADADQEQA/B3ASIADgBIAEABIACABQACACABAEQAAADgCACQgCADgDAAQgBAAgBAAQAAAAgBAAQAAgBgBAAQAAAAgBAAQAdBLgNBcgAkwDMQBcjNgPi6IgDAAQgKAAgHgIQgHgHAAgKQAAgKAHgHQAHgHAKAAQAKAAAHAHIAEAEQHIBuDIAdIAHgBIAFABIAEADQAEAEAAAFQAAAGgEADQgEAEgFAAQgFAAgDgCQAjCBgpCegAJngSQgDACgEAAQgFAAgEgEQgDgDAAgFQAAgFADgEIAFgDIAEgBQAFAAAEAEQDSAaDnAGIAAAPIgSAAQAaAdgUCIInQAUQAygqgRirgAwLAWQA7hHgIhXQgDgBgCgCQgDgDgBgDQAAgEACgDQADgCADAAQAEAAADACIACACIEzBzIACgBIACgBQADAAADACQACADAAADQABADgCACQgCADgDAAIgCAAQAVBCgPAxgAJzgxQBKhbgVhvIgDAAQgFAAgEgEQgDgDAAgFQAAgFADgEQAEgEAFAAQAFAAAEAEIADAEICjAlIAAheIALACIAABeIDOAvIAAARIgUAAQAVBCgVBOgAvFicQAmgcAFhIQgEAAgDgDQgDgDAAgEQgBgEACgDQADgDAEAAQAFAAACADQADACABADIDDBqIgClgIAGgCQAEgBAHADIAAFoIArAXQAAAAABAAQAAAAAAAAQABABAAAAQAAAAABABQACACAAACQAAABAAAAQAAABAAAAQAAABgBABQAAAAAAABQgBAAAAAAQgBABAAAAQgBAAAAAAQgBABAAAAQgDAAgCgCIgCgEQAFAYgBA3gAjGjrQB1h9AEiWQgFgBgEgDQgEgFAAgGQAAgHAEgEQAFgFAGAAQAHAAAEAFIADADIH6DFIACgBIAFgBQAFAAAEAEQAEAEAAAFQAAAGgEADQgEAEgFAAIgDAAQAWB0gjBWgAgpogQBHgwAYh9QgHAAgFgFQgFgFAAgHQAAgHAFgFQAFgFAHAAQAHAAAFAFQADAEABAEICABKIAAjTQAGgFALAFIAADdIEICZQADABACACQADAEAAAEQAAAFgDADQgDADgFAAQgEAAgEgDQgCgDgBgDQAEAogMBgg");
-        this.shape_1.setTransform(-7.9111,-98.0558);
-        this.timeline.addTween(cjs.Tween.get(this.shape_1).wait(1));
-
-        this.shape_2 = new cjs.Shape();
-        this.shape_2.graphics.f().s("#283891").ss(0.5,1,1).p("ABetTIgyCmAJHkVIAdAjAJIkOQg0BjAFBjALAjyIArhCIBOBjAJHkVIgGACAO2i+IjQiGIifAvInlpWIiJB8Qg6B8hWBUAHkDTQgRBCAFA6IjlHJAIDD6IgrBVQACASAEARQAGAfAPAdAIMESIguBgIjLGmAJjHZIgzErAJ6HZIgwEZAOgA1ID3IDAOlApIEAHqAICgYQgXBggFBcAs0nLIAAABIgBABQhgBphlBYAs0nLQAAABgBABIjKCvAsyl6IApDxAs1n1QgEAXAFATAipoTQhLC1hWBzAwIkYQgRBQgkAuAxGigQgLBqg1BIQAECCgiCCQASBYgDB3AvEGaIgqE8Au3GGIgrFcAwvGpIgpEjAwjGUIgwFaAp0LZICSh/IATgPQAqBsAqBnAipHZIg/GUAniJaQAyCBAzBzAnPJLICTh/Ak2jWIh/GsQAbCqgfCmAi/HYIg7GBAs9m5IhYEZAs1mJIgtD4AswncQCqJOC3HZAs0nKQClJmCtG+");
-        this.shape_2.setTransform(3.0875,-96.7);
-        this.timeline.addTween(cjs.Tween.get(this.shape_2).wait(1));
-
-        this._renderFirstFrame();
-      }.prototype = p = new cjs.MovieClip();
-
-      lib.เรือ200x200 = function(mode,startPosition,loop,reversed) {
-        if (loop == null) { loop = true; }
-        if (reversed == null) { reversed = false; }
-        var props = new Object();
-        props.mode = mode;
-        props.startPosition = startPosition;
-        props.labels = {};
-        props.loop = loop;
-        props.reversed = reversed;
-        cjs.MovieClip.apply(this,[props]);
-
-        this.instance = new lib.Tween1("synched",0);
-        this.instance.setTransform(99.85,151.25,0.5132,0.5132,-0.5111,0,0,0.3,0.2);
-
-        this.timeline.addTween(cjs.Tween.get(this.instance).to({y:142.65},63).to({startPosition:0},1).to({y:154.9},60).wait(1));
-
-        this._renderFirstFrame();
-      }.prototype = p = new lib.AnMovieClip();
-
-      fnStartAnimation = function() {
-        canvas = document.getElementById("canvasAnimation");
-        exportRoot = new lib.เรือ200x200();
-        stage = new createjs.Stage(canvas);
-        stage.addChild(exportRoot);
-        stage.enableMouseOver();
-        
-        createjs.Ticker.framerate = 60;
-        createjs.Ticker.addEventListener("tick", stage);
-      };
-    })(createjs = createjs||{}, AdobeAn = AdobeAn||{});
-
-    window.addEventListener("load", function() {
-      if (typeof fnStartAnimation === "function") {
-        fnStartAnimation();
-      }
-    });
-  </script>
 
   <script>
     const SUPABASE_URL = "https://rpiaifkzowzwgjeglody.supabase.co";
@@ -1500,11 +1411,6 @@
 
     window.addEventListener("DOMContentLoaded", async () => {
       await syncDataFromSupabase();
-
-      // สั่งเริ่มรันแอนิเมชันเรือขยับ
-      if (typeof fnStartAnimation === "function") {
-        fnStartAnimation();
-      }
 
       // ปิดหน้าจอโหลดหลังจากเวลาผ่านไป ~4.5 วินาที
       setTimeout(() => {
