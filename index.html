@@ -59,7 +59,7 @@
       width: 100% !important;
     }
 
-    /* หน้าจอโหลด: คลุมเต็มพื้นที่จอ มีรูป GIF เรืออยู่เหนือแถบโหลด */
+    /* หน้าจอโหลด: คลุมเต็มพื้นที่จอ มีรูป GIF สุ่มอยู่เหนือแถบโหลด */
     #initialLoader {
       position: fixed !important;
       top: 0 !important; left: 0 !important;
@@ -335,9 +335,9 @@
 </head>
 
 <body class="lock-scroll">
-  <!-- หน้าจอโหลด: ใช้รูป GIF เรือจาก GitHub ของคุณโดยตรง -->
+  <!-- หน้าจอโหลด: สุ่มแสดงภาพระหว่างเรือกับเฟืองทุกครั้งที่เปิดเว็บ -->
   <div id="initialLoader">
-    <img class="loader-ship-gif" src="https://raw.githubusercontent.com/ntcadmin1234-ai/ntc-online-exam/main/เรือ-200x200.gif" alt="เรือกำลังแล่น" />
+    <img id="randomLoaderImg" class="loader-ship-gif" src="" alt="กำลังโหลด" />
     <div class="loader-bar-wrap">
       <div class="loader-bar-fill"></div>
     </div>
@@ -1410,6 +1410,17 @@
     }
 
     window.addEventListener("DOMContentLoaded", async () => {
+      // สุ่มเลือกภาพเคลื่อนไหวระหว่าง "เรือ" กับ "เฟือง1"
+      const loaderImages = [
+        "https://raw.githubusercontent.com/ntcadmin1234-ai/ntc-online-exam/main/เรือ-200x200.gif",
+        "https://raw.githubusercontent.com/ntcadmin1234-ai/ntc-online-exam/main/เฟือง1-200x200.gif"
+      ];
+      const randomIndex = Math.floor(Math.random() * loaderImages.length);
+      const imgElement = document.getElementById("randomLoaderImg");
+      if (imgElement) {
+        imgElement.src = loaderImages[randomIndex];
+      }
+
       await syncDataFromSupabase();
 
       // ปิดหน้าจอโหลดหลังจากเวลาผ่านไป ~4.5 วินาที
