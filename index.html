@@ -253,10 +253,10 @@
     .dropdown-item-title { font-family: "Kanit", sans-serif; font-size: 15px; font-weight: 500; color: #2563eb; display: block; }
     .dropdown-item-desc { font-family: "Kanit", sans-serif; font-size: 12px; color: #64748b; display: block; margin-top: 2px; }
     .login-page { min-height: 100vh; display: grid; grid-template-rows: 72px 1fr; }
-    .logo-img { width: 80px; height: 80px; margin: 0 auto 20px; object-fit: contain; display: block; }
+    .logo-img { width: 80px; height: 80px; margin: 0 auto 16px; object-fit: contain; display: block; }
     h1 { margin: 0; color: #0f172a; font-size: 24px; font-weight: 600; }
-    .subtitle { margin: 8px 0 30px; color: #64748b; font-size: 16px; font-weight: 300; }
-    label { display: block; margin-bottom: 8px; color: #334155; font-size: 15px; font-weight: 500; text-align: left; }
+    .subtitle { margin: 6px 0 20px; color: #64748b; font-size: 15px; font-weight: 300; }
+    label { display: none; }
     .input-wrap { position: relative; width: 100%; }
     .input-icon { position: absolute; top: 50%; left: 16px; transform: translateY(-50%); pointer-events: none; z-index: 2; }
     input, select, textarea {
@@ -276,7 +276,7 @@
     }
     .primary-button {
       background: linear-gradient(135deg, #0ea5e9, #4f46e5); color: #ffffff;
-      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22); width: 100%; margin-top: 20px; padding: 15px;
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.22); width: 100%; margin-top: 16px; padding: 15px;
       box-sizing: border-box;
     }
     .secondary-button { background: #e0f2fe; color: #0369a1; padding: 10px 16px; font-size: 14px; margin-bottom: 15px; }
@@ -375,14 +375,13 @@
       <p class="subtitle">กรุณากรอกรหัสนักเรียนเพื่อเข้าสู่การสอบ</p>
       <form id="studentForm">
         <div id="loginInputArea">
-          <label for="studentIdInput">รหัสนักเรียน</label>
           <div class="input-wrap">
             <span class="input-icon">🎓</span>
             <input id="studentIdInput" type="text" placeholder="กรอกรหัสนักเรียน" maxlength="20" autocomplete="off" required />
           </div>
         </div>
         <div id="studentChoicesArea" class="hidden" style="margin-top: 15px;">
-          <label style="margin-bottom: 10px; font-weight: 600; color: #2563eb;">พบชื่อที่ตรงกัน กรุณาเลือกชื่อของคุณ:</label>
+          <label style="margin-bottom: 10px; font-weight: 600; color: #2563eb; display: block;">พบชื่อที่ตรงกัน กรุณาเลือกชื่อของคุณ:</label>
           <div id="studentChoicesList" style="max-height: 220px; overflow-y: auto; margin-bottom: 15px;"></div>
           <button class="secondary-button" type="button" onclick="resetStudentLoginInput()" style="width: 100%; margin: 0;">← กรอกรหัสนักเรียนใหม่อีกครั้ง</button>
         </div>
@@ -472,7 +471,6 @@
       <p class="subtitle" id="loginSubtitle">กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ</p>
       <form id="adminLoginForm">
         <input type="hidden" id="loginRoleType" value="admin" />
-        <label for="adminPasswordInput" id="loginPasswordLabel">รหัสผ่านแอดมิน</label>
         <div class="input-wrap">
           <span class="input-icon">🔒</span>
           <input id="adminPasswordInput" type="password" placeholder="กรอกรหัสผ่าน" autocomplete="current-password" required />
@@ -795,19 +793,16 @@
       const roleTypeInput = document.getElementById("loginRoleType");
       const loginTitle = document.getElementById("loginTitle");
       const loginSubtitle = document.getElementById("loginSubtitle");
-      const loginPasswordLabel = document.getElementById("loginPasswordLabel");
       const loginCardLogo = document.getElementById("loginCardLogo");
       roleTypeInput.value = role;
 
       if (role === "advisor") {
         loginTitle.textContent = "เข้าสู่ระบบที่ปรึกษา";
         loginSubtitle.textContent = "กรุณากรอกรหัสผ่านเพื่อตรวจสอบคะแนนสอบ";
-        loginPasswordLabel.textContent = "รหัสผ่านที่ปรึกษา";
         loginCardLogo.src = "https://i.ibb.co/SWbq8Zq/person.png";
       } else {
         loginTitle.textContent = "เข้าสู่ระบบแอดมิน";
         loginSubtitle.textContent = "กรุณากรอกรหัสผ่านเพื่อเข้าสู่ระบบ";
-        loginPasswordLabel.textContent = "รหัสผ่านแอดมิน";
         loginCardLogo.src = "https://i.ibb.co/V0MFdZ54/settings.png";
       }
       adminPasswordInput.value = "";
