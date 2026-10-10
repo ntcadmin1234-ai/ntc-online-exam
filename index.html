@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '50';
+    const CURRENT_VERSION = '52';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -520,8 +520,18 @@
             <div class="info-grid">
               <div class="info-item"><label for="newStudentId">รหัสนักเรียน</label><input id="newStudentId" type="text" placeholder="เช่น 1001" required /></div>
               <div class="info-item"><label for="newStudentName">ชื่อ - นามสกุล</label><input id="newStudentName" type="text" placeholder="เช่น สมชาย ใจดี" required /></div>
-              <div class="info-item"><label for="newStudentYear">ชั้นปี</label><select id="newStudentYear" required><option value="1">1</option><option value="2">2</option><option value="Test">Test (ห้องพิเศษ)</option></select></div>
-              <div class="info-item"><label for="newStudentRoom">ห้อง</label><input id="newStudentRoom" type="text" placeholder="เช่น 1 หรือ Test" required /></div>
+              <div class="info-item">
+                <label for="newStudentYear">ชั้นปี</label>
+                <select id="newStudentYear" onchange="handleYearChange(this)" required>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="Test">Test (ห้องพิเศษ)</option>
+                </select>
+              </div>
+              <div class="info-item">
+                <label for="newStudentRoom">ห้อง</label>
+                <input id="newStudentRoom" type="text" placeholder="เช่น 1 หรือ Test" required />
+              </div>
             </div>
             <button class="primary-button" type="submit">เพิ่มนักเรียนรายบุคคล</button>
           </form>
@@ -536,7 +546,14 @@
             </div>
             <div class="info-grid" style="margin-bottom: 15px;">
               <div class="info-item"><label for="sheetSelect">เลือก Sheet (แผ่นงาน)</label><select id="sheetSelect" style="background: #fff;"><option value="">-- กรุณาเลือกไฟล์ก่อน --</option></select></div>
-              <div class="info-item"><label for="excelTargetYear">กำหนดชั้นปีสำหรับทุกคนในไฟล์นี้</label><select id="excelTargetYear" style="background: #fff;"><option value="1">ปี 1</option><option value="2">ปี 2</option><option value="Test">Test (ห้องพิเศษ)</option></select></div>
+              <div class="info-item">
+                <label for="excelTargetYear">กำหนดชั้นปีสำหรับทุกคนในไฟล์นี้</label>
+                <select id="excelTargetYear" onchange="handleExcelYearChange(this)" style="background: #fff;">
+                  <option value="1">ปี 1</option>
+                  <option value="2">ปี 2</option>
+                  <option value="Test">Test (ห้องพิเศษ)</option>
+                </select>
+              </div>
             </div>
             <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
               <div><label style="font-size: 13px;">คอลัมน์ รหัส (เช่น A)</label><input id="colId" type="text" value="A" style="text-transform: uppercase;" /></div>
@@ -546,7 +563,7 @@
             <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
               <div><label style="font-size: 13px;">เริ่มต้นที่แถว</label><input id="startRow" type="number" value="2" min="1" /></div>
               <div><label style="font-size: 13px;">สิ้นสุดที่แถว (เว้นว่างได้)</label><input id="endRow" type="number" placeholder="เช่น 30" /></div>
-              <div><label style="font-size: 13px;">ห้อง</label><input id="excelRoomInput" type="text" value="Test" /></div>
+              <div><label id="excelRoomLabel" style="font-size: 13px;">ห้อง</label><input id="excelRoomInput" type="text" value="1" /></div>
             </div>
             <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 12px 24px;">อัปโหลดและบันทึกรายชื่อ</button>
           </div>
@@ -919,7 +936,6 @@
       const subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
       const scores = JSON.parse(localStorage.getItem("examScores")) || [];
       
-      // เงื่อนไขพิเศษ: หากห้องเป็น Test (ไม่สนตัวอักษรพิมพ์เล็ก/ใหญ่) ให้แสดงทุกวิชาในระบบทันที
       let filteredSubjects = [];
       const isTestClass = studentClass.trim().toLowerCase() === "test";
 
@@ -996,6 +1012,8 @@
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
+        if (a.toLowerCase() === "test") return -1;
+        if (b.toLowerCase() === "test") return 1;
         return a.localeCompare(b, 'th', { numeric: true });
       });
 
@@ -1041,14 +1059,45 @@
       });
     }
 
+    function handleYearChange(selectEl) {
+      const roomInput = document.getElementById("newStudentRoom");
+      if (selectEl.value === "Test") {
+        roomInput.value = "Test";
+        roomInput.disabled = true;
+        roomInput.style.background = "#e2e8f0";
+        roomInput.removeAttribute("required");
+      } else {
+        roomInput.value = "";
+        roomInput.disabled = false;
+        roomInput.style.background = "#f8fafc";
+        roomInput.setAttribute("required", "true");
+      }
+    }
+
+    function handleExcelYearChange(selectEl) {
+      const roomInput = document.getElementById("excelRoomInput");
+      const roomLabel = document.getElementById("excelRoomLabel");
+      if (selectEl.value === "Test") {
+        roomInput.value = "Test";
+        roomInput.disabled = true;
+        roomInput.style.background = "#e2e8f0";
+        roomLabel.style.opacity = "0.5";
+      } else {
+        roomInput.value = "1";
+        roomInput.disabled = false;
+        roomInput.style.background = "#fff";
+        roomLabel.style.opacity = "1";
+      }
+    }
+
     document.getElementById("studentAddForm").addEventListener("submit", event => {
       event.preventDefault();
       const studentId = document.getElementById("newStudentId").value.trim();
       const studentName = document.getElementById("newStudentName").value.trim();
       const studentYear = document.getElementById("newStudentYear").value;
       const studentRoom = document.getElementById("newStudentRoom").value.trim();
-      // หากเลือกชั้นปีเป็น Test หรือห้องเป็น Test ให้บันทึกเป็น "Test" เพียวๆ
-      const studentClass = (studentYear.toLowerCase() === "test" || studentRoom.toLowerCase() === "test") ? "Test" : `${studentYear}/${studentRoom}`;
+      
+      const studentClass = (studentYear === "Test") ? "Test" : `${studentYear}/${studentRoom}`;
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
       if (students.some(s => s.name.trim().toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass)) {
@@ -1063,6 +1112,8 @@
         supabaseClient.from("students").upsert({ id: studentId, name: studentName, student_class: studentClass, term1_status: true, term2_status: true }).then();
       }
       event.target.reset();
+      document.getElementById("newStudentRoom").disabled = false;
+      document.getElementById("newStudentRoom").style.background = "#f8fafc";
       renderStudentsTable();
       alert("เพิ่มนักเรียนสำเร็จ!");
     });
@@ -1119,7 +1170,7 @@
           const fullName = `${namePart} ${lastNamePart}`.trim();
 
           if (id && fullName) {
-            const studentClass = (targetYear.toLowerCase() === "test" || room.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
+            const studentClass = (targetYear === "Test") ? "Test" : `${targetYear}/${room}`;
             if (!students.some(s => s.name.trim().toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass)) {
               students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
               newStudentsForSupabase.push({ id: id, name: fullName, student_class: studentClass, term1_status: true, term2_status: true });
@@ -1197,7 +1248,7 @@
           supabaseClient.from("exam_scores").delete().neq("student_id", "___dummy___").then();
         }
         renderStudentsTable();
-        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้ว!");
+        alert("ลบรายชื่อทั้งหมดเรียบร้อยแล้วครับ!");
       }
     }
 
