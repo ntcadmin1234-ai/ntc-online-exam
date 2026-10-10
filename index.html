@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '48';
+    const CURRENT_VERSION = '50';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -520,8 +520,8 @@
             <div class="info-grid">
               <div class="info-item"><label for="newStudentId">รหัสนักเรียน</label><input id="newStudentId" type="text" placeholder="เช่น 1001" required /></div>
               <div class="info-item"><label for="newStudentName">ชื่อ - นามสกุล</label><input id="newStudentName" type="text" placeholder="เช่น สมชาย ใจดี" required /></div>
-              <div class="info-item"><label for="newStudentYear">ชั้นปี</label><select id="newStudentYear" required><option value="1">1</option><option value="2">2</option></select></div>
-              <div class="info-item"><label for="newStudentRoom">ห้อง</label><input id="newStudentRoom" type="text" placeholder="เช่น 1, 2" required /></div>
+              <div class="info-item"><label for="newStudentYear">ชั้นปี</label><select id="newStudentYear" required><option value="1">1</option><option value="2">2</option><option value="Test">Test (ห้องพิเศษ)</option></select></div>
+              <div class="info-item"><label for="newStudentRoom">ห้อง</label><input id="newStudentRoom" type="text" placeholder="เช่น 1 หรือ Test" required /></div>
             </div>
             <button class="primary-button" type="submit">เพิ่มนักเรียนรายบุคคล</button>
           </form>
@@ -536,7 +536,7 @@
             </div>
             <div class="info-grid" style="margin-bottom: 15px;">
               <div class="info-item"><label for="sheetSelect">เลือก Sheet (แผ่นงาน)</label><select id="sheetSelect" style="background: #fff;"><option value="">-- กรุณาเลือกไฟล์ก่อน --</option></select></div>
-              <div class="info-item"><label for="excelTargetYear">กำหนดชั้นปีสำหรับทุกคนในไฟล์นี้</label><select id="excelTargetYear" style="background: #fff;"><option value="1">ปี 1</option><option value="2">ปี 2</option></select></div>
+              <div class="info-item"><label for="excelTargetYear">กำหนดชั้นปีสำหรับทุกคนในไฟล์นี้</label><select id="excelTargetYear" style="background: #fff;"><option value="1">ปี 1</option><option value="2">ปี 2</option><option value="Test">Test (ห้องพิเศษ)</option></select></div>
             </div>
             <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
               <div><label style="font-size: 13px;">คอลัมน์ รหัส (เช่น A)</label><input id="colId" type="text" value="A" style="text-transform: uppercase;" /></div>
@@ -546,7 +546,7 @@
             <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
               <div><label style="font-size: 13px;">เริ่มต้นที่แถว</label><input id="startRow" type="number" value="2" min="1" /></div>
               <div><label style="font-size: 13px;">สิ้นสุดที่แถว (เว้นว่างได้)</label><input id="endRow" type="number" placeholder="เช่น 30" /></div>
-              <div><label style="font-size: 13px;">ห้อง</label><input id="excelRoomInput" type="text" value="1" /></div>
+              <div><label style="font-size: 13px;">ห้อง</label><input id="excelRoomInput" type="text" value="Test" /></div>
             </div>
             <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 12px 24px;">อัปโหลดและบันทึกรายชื่อ</button>
           </div>
@@ -918,11 +918,20 @@
       container.innerHTML = "";
       const subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
       const scores = JSON.parse(localStorage.getItem("examScores")) || [];
-      const studentYearNum = studentClass.split("/")[0];
-      const filteredSubjects = subjects.filter(sub => sub.targetYear === studentYearNum);
+      
+      // เงื่อนไขพิเศษ: หากห้องเป็น Test (ไม่สนตัวอักษรพิมพ์เล็ก/ใหญ่) ให้แสดงทุกวิชาในระบบทันที
+      let filteredSubjects = [];
+      const isTestClass = studentClass.trim().toLowerCase() === "test";
+
+      if (isTestClass) {
+        filteredSubjects = subjects;
+      } else {
+        const studentYearNum = studentClass.split("/")[0];
+        filteredSubjects = subjects.filter(sub => sub.targetYear === studentYearNum);
+      }
 
       if (filteredSubjects.length === 0) {
-        container.innerHTML = `<p style="color: #64748b; text-align: center; margin: 10px 0;">ยังไม่มีวิชาสอบสำหรับชั้นปีที่ ${studentYearNum} (${studentClass})</p>`;
+        container.innerHTML = `<p style="color: #64748b; text-align: center; margin: 10px 0;">ยังไม่มีวิชาสอบสำหรับห้อง ${studentClass}</p>`;
         return;
       }
 
@@ -932,7 +941,7 @@
         const isDone = !!existingScore;
         const box = document.createElement("div");
         box.className = "exam-box";
-        box.innerHTML = `<div><h3>${sub.name} (${sub.id})</h3><p>ข้อสอบปรนัย จำนวน ${sub.questions.length} ข้อ | สำหรับชั้นปีที่ ${sub.targetYear} ${isDone ? '<br><span style="color: #16a34a; font-weight: 500;">คะแนนที่ได้: ' + existingScore.score + '</span>' : ''}</p></div><button class="start-button ${isDone ? 'done' : ''}" type="button" ${isDone ? 'disabled' : ''} onclick="startExam('${sub.id}')">${isDone ? 'สอบแล้ว' : 'เริ่มทำข้อสอบ'}</button>`;
+        box.innerHTML = `<div><h3>${sub.name} (${sub.id})</h3><p>ข้อสอบปรนัย จำนวน ${sub.questions.length} ข้อ | วิชาสำหรับ ${isTestClass ? 'ห้องพิเศษ Test' : 'ชั้นปีที่ ' + sub.targetYear} ${isDone ? '<br><span style="color: #16a34a; font-weight: 500;">คะแนนที่ได้: ' + existingScore.score + '</span>' : ''}</p></div><button class="start-button ${isDone ? 'done' : ''}" type="button" ${isDone ? 'disabled' : ''} onclick="startExam('${sub.id}')">${isDone ? 'สอบแล้ว' : 'เริ่มทำข้อสอบ'}</button>`;
         container.appendChild(box);
       });
     }
@@ -987,10 +996,7 @@
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
-        const partsA = a.split('/').map(Number);
-        const partsB = b.split('/').map(Number);
-        if (partsA[0] !== partsB[0]) return partsA[0] - partsB[0];
-        return (partsA[1] || 0) - (partsB[1] || 0);
+        return a.localeCompare(b, 'th', { numeric: true });
       });
 
       sortedClasses.forEach(cls => {
@@ -1041,7 +1047,8 @@
       const studentName = document.getElementById("newStudentName").value.trim();
       const studentYear = document.getElementById("newStudentYear").value;
       const studentRoom = document.getElementById("newStudentRoom").value.trim();
-      const studentClass = `${studentYear}/${studentRoom}`;
+      // หากเลือกชั้นปีเป็น Test หรือห้องเป็น Test ให้บันทึกเป็น "Test" เพียวๆ
+      const studentClass = (studentYear.toLowerCase() === "test" || studentRoom.toLowerCase() === "test") ? "Test" : `${studentYear}/${studentRoom}`;
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
       if (students.some(s => s.name.trim().toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass)) {
@@ -1089,7 +1096,7 @@
       if (!loadedWorkbook) { alert("กรุณาเลือกไฟล์ Excel ก่อนครับ"); return; }
       const sheetName = document.getElementById("sheetSelect").value;
       const targetYear = document.getElementById("excelTargetYear").value;
-      const room = document.getElementById("excelRoomInput").value.trim() || "1";
+      const room = document.getElementById("excelRoomInput").value.trim() || "Test";
       const colId = colLetterToIndex(document.getElementById("colId").value);
       const colName = colLetterToIndex(document.getElementById("colName").value);
       const colLastName = colLetterToIndex(document.getElementById("colLastName").value);
@@ -1112,7 +1119,7 @@
           const fullName = `${namePart} ${lastNamePart}`.trim();
 
           if (id && fullName) {
-            const studentClass = `${targetYear}/${room}`;
+            const studentClass = (targetYear.toLowerCase() === "test" || room.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
             if (!students.some(s => s.name.trim().toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass)) {
               students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
               newStudentsForSupabase.push({ id: id, name: fullName, student_class: studentClass, term1_status: true, term2_status: true });
