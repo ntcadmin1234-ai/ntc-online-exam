@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '65';
+    const CURRENT_VERSION = '66';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1428,7 +1428,7 @@
       editingSubjectId = null;
     }
 
-    function saveSubjectConfig() {
+    async function saveSubjectConfig() {
       if (!editingSubjectId) return;
       let selectedYears = [];
       if (document.getElementById("chkYear1").checked) selectedYears.push("1");
@@ -1447,14 +1447,18 @@
       });
 
       localStorage.setItem("examSubjects", JSON.stringify(subjects));
+      
       if (supabaseClient && targetSub) {
-        supabaseClient.from("subjects").upsert({
-          id: targetSub.id,
-          name: targetSub.name,
-          target_years: selectedYears,
-          term: '1',
-          questions: targetSub.questions
-        }).then();
+        // ใช้ update แทน upsert เพื่อความชัวร์ว่าจะไม่ไปกระทบฟิลด์อื่น และตรงกับแถวข้อมูลเดิม
+        const { error } = await supabaseClient.from("subjects").update({
+          target_years: selectedYears
+        }).eq("id", targetSub.id);
+
+        if (error) {
+          console.error("Supabase update error:", error);
+          alert("เกิดข้อผิดพลาดในการบันทึกลงฐานข้อมูล: " + error.message);
+          return;
+        }
       }
 
       closeSubjectModal();
