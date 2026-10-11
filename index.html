@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '53';
+    const CURRENT_VERSION = '54';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -728,13 +728,15 @@
         if (!scErr && scData && scData.length > 0) {
           storedScores = scData.map(sc => {
             const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
+            // ค้นหาชื่อวิชาปัจจุบันจาก subjectId หรือจากชื่อเดิมที่ตรงกัน
             const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
+            const currentSubjectName = matchedSubject ? matchedSubject.name : sc.subject_name;
             return {
               studentId: sc.student_id || (matchedStudent ? matchedStudent.id : "-"),
               name: sc.name,
               studentClass: sc.student_class || (matchedStudent ? matchedStudent.studentClass : "-"),
-              subjectId: sc.subject_id,
-              subjectName: sc.subject_name || (matchedSubject ? matchedSubject.name : "-"),
+              subjectId: sc.subject_id || (matchedSubject ? matchedSubject.id : "-"),
+              subjectName: currentSubjectName,
               score: sc.score
             };
           });
@@ -947,7 +949,6 @@
       const isTestClass = studentClass.trim().toLowerCase() === "test";
 
       if (isTestClass) {
-        // หากเป็นห้อง Test ให้แสดงเฉพาะวิชาที่ตั้งค่า targetYear เป็น Test เท่านั้น
         filteredSubjects = subjects.filter(sub => String(sub.targetYear).trim().toLowerCase() === "test");
       } else {
         const studentYearNum = studentClass.split("/")[0];
@@ -961,7 +962,7 @@
 
       filteredSubjects.forEach(sub => {
         const currentStudentName = localStorage.getItem("studentName");
-        const existingScore = scores.find(s => s.studentId === studentId && s.name === currentStudentName && s.subjectId === sub.id);
+        const existingScore = scores.find(s => s.studentId === studentId && s.name === currentStudentName && (s.subjectId === sub.id || s.subjectName === sub.name));
         const isDone = !!existingScore;
         const box = document.createElement("div");
         box.className = "exam-box";
@@ -1503,7 +1504,7 @@
       if (savedStudentId && savedStudentName && savedStudentClass) {
         const found = (JSON.parse(localStorage.getItem("examStudents")) || []).find(s => s.id === savedStudentId && s.name === savedStudentName && s.studentClass === savedStudentClass);
         if (found && found.status !== false) {
-          loginAsSectionStudent = loginAsStudent(found.id, found.name, found.studentClass);
+          loginAsStudent(found.id, found.name, found.studentClass);
           return;
         }
       }
