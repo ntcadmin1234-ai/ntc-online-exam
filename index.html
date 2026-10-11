@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '76';
+    const CURRENT_VERSION = '77';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -746,24 +746,24 @@
       if (!supabaseClient) return;
       try {
         const { data: stdData, error: stdErr } = await supabaseClient.from("students").select("*");
-        if (!stdErr && stdData && stdData.length > 0) {
+        if (!stdErr && stdData && Array.isArray(stdData)) {
           storedStudents = stdData.map(s => ({
-            id: s.id,
-            name: s.name,
-            studentClass: s.student_class,
+            id: s.id || "",
+            name: s.name || "",
+            studentClass: s.student_class || "",
             status: s.term1_status !== false && s.status !== false
           }));
           localStorage.setItem("examStudents", JSON.stringify(storedStudents));
         }
 
         const { data: subData, error: subErr } = await supabaseClient.from("subjects").select("*");
-        if (!subErr && subData && subData.length > 0) {
+        if (!subErr && subData && Array.isArray(subData)) {
           storedSubjects = subData.map(sub => {
             let parsedQ = [];
             try {
               if (Array.isArray(sub.questions)) {
                 parsedQ = sub.questions;
-              } else if (typeof sub.questions === 'string') {
+              } else if (typeof sub.questions === 'string' && sub.questions.trim() !== '') {
                 parsedQ = JSON.parse(sub.questions);
               }
             } catch(e) { parsedQ = []; }
@@ -774,7 +774,7 @@
             if (rawYear !== null && rawYear !== undefined) {
               if (Array.isArray(rawYear)) {
                 years = rawYear;
-              } else if (typeof rawYear === 'string') {
+              } else if (typeof rawYear === 'string' && rawYear.trim() !== '') {
                 try {
                   years = JSON.parse(rawYear);
                 } catch(e) {
@@ -786,9 +786,9 @@
             }
 
             return {
-              id: sub.id,
-              name: sub.name,
-              targetYears: years,
+              id: sub.id || "",
+              name: sub.name || "",
+              targetYears: Array.isArray(years) ? years : ["1", "2"],
               questions: parsedQ
             };
           });
@@ -796,18 +796,18 @@
         }
 
         const { data: scData, error: scErr } = await supabaseClient.from("exam_scores").select("*");
-        if (!scErr && scData && scData.length > 0) {
+        if (!scErr && scData && Array.isArray(scData)) {
           storedScores = scData.map(sc => {
             const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
             const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
-            const currentSubjectName = matchedSubject ? matchedSubject.name : sc.subject_name;
+            const currentSubjectName = matchedSubject ? matchedSubject.name : (sc.subject_name || "-");
             return {
               studentId: sc.student_id || (matchedStudent ? matchedStudent.id : "-"),
-              name: sc.name,
+              name: sc.name || "",
               studentClass: sc.student_class || (matchedStudent ? matchedStudent.studentClass : "-"),
               subjectId: sc.subject_id || (matchedSubject ? matchedSubject.id : "-"),
               subjectName: currentSubjectName,
-              score: sc.score
+              score: sc.score || "0"
             };
           });
           localStorage.setItem("examScores", JSON.stringify(storedScores));
@@ -942,7 +942,7 @@
         showAdvisorPage();
       } else {
         localStorage.setItem("adminLoggedIn", "true");
-        showAdminPage("students");
+        showAdminPage("subjects");
       }
     });
 
@@ -1494,8 +1494,16 @@
 
     function renderSubjectsTable() {
       const tbody = document.getElementById("subjectTableBody");
+      if (!tbody) return;
       tbody.innerHTML = "";
-      (JSON.parse(localStorage.getItem("examSubjects")) || []).forEach(sub => {
+      const subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
+      
+      if (subjects.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b;">ยังไม่มีรายวิชาในระบบ</td></tr>`;
+        return;
+      }
+
+      subjects.forEach(sub => {
         const row = tbody.insertRow();
         const years = sub.targetYears || [];
         let yearBadges = '';
@@ -1507,10 +1515,10 @@
         }
         
         row.innerHTML = `
-          <td>${sub.id}</td>
-          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่า">${sub.name}</a></td>
+          <td>${sub.id || '-'}</td>
+          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่า">${sub.name || '-'}</a></td>
           <td>${yearBadges}</td>
-          <td>${sub.questions.length} ข้อ</td>
+          <td>${(sub.questions || []).length} ข้อ</td>
           <td>
             <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
               <button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button>
@@ -1530,7 +1538,7 @@
       document.getElementById("subjectSubmitBtn").textContent = "อัปเดตวิชาและคำถามสอบ";
       const container = document.getElementById("questionListContainer");
       container.innerHTML = "";
-      sub.questions.forEach(q => addQuestionField(q));
+      (sub.questions || []).forEach(q => addQuestionField(q));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
