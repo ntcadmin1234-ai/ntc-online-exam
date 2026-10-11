@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '66';
+    const CURRENT_VERSION = '68';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1449,7 +1449,6 @@
       localStorage.setItem("examSubjects", JSON.stringify(subjects));
       
       if (supabaseClient && targetSub) {
-        // ใช้ update แทน upsert เพื่อความชัวร์ว่าจะไม่ไปกระทบฟิลด์อื่น และตรงกับแถวข้อมูลเดิม
         const { error } = await supabaseClient.from("subjects").update({
           target_years: selectedYears
         }).eq("id", targetSub.id);
@@ -1475,7 +1474,7 @@
         let yearBadges = '';
         
         if (years.length === 0) {
-          yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">🔴 ไม่ได้เปิดสอบ (ซ่อนอยู่)</span>`;
+          yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">ปิด</span>`;
         } else {
           yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('');
         }
