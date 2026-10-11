@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '74';
+    const CURRENT_VERSION = '75';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -761,10 +761,14 @@
           storedSubjects = subData.map(sub => {
             let parsedQ = [];
             try {
-              parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
+              if (Array.isArray(sub.questions)) {
+                parsedQ = sub.questions;
+              } else if (typeof sub.questions === 'string') {
+                parsedQ = JSON.parse(sub.questions);
+              }
             } catch(e) { parsedQ = []; }
+            if (!Array.isArray(parsedQ)) parsedQ = [];
             
-            // รองรับทั้ง target_year และ target_years พร้อมกันอย่างสมบูรณ์
             let rawYear = sub.target_year !== undefined ? sub.target_year : sub.target_years;
             let years = ["1", "2"];
             if (rawYear !== null && rawYear !== undefined) {
@@ -1457,7 +1461,6 @@
       localStorage.setItem("examSubjects", JSON.stringify(subjects));
       
       if (supabaseClient && targetSub) {
-        // ส่งบันทึกทั้งสองฟิลด์พร้อมกันเพื่อป้องกันปัญหาตารางสลับชื่อ
         const { error } = await supabaseClient.from("subjects").update({
           target_year: JSON.stringify(selectedYears),
           target_years: JSON.stringify(selectedYears)
