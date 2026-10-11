@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '73';
+    const CURRENT_VERSION = '74';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -764,9 +764,10 @@
               parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
             } catch(e) { parsedQ = []; }
             
-            let rawYear = sub.target_year || sub.target_years;
+            // รองรับทั้ง target_year และ target_years พร้อมกันอย่างสมบูรณ์
+            let rawYear = sub.target_year !== undefined ? sub.target_year : sub.target_years;
             let years = ["1", "2"];
-            if (rawYear) {
+            if (rawYear !== null && rawYear !== undefined) {
               if (Array.isArray(rawYear)) {
                 years = rawYear;
               } else if (typeof rawYear === 'string') {
@@ -777,7 +778,7 @@
                 }
               }
             } else {
-              years = [];
+              years = ["1", "2"];
             }
 
             return {
@@ -1399,7 +1400,7 @@
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(years), term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(years), target_years: JSON.stringify(years), term: '1', questions: questionsArray }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
@@ -1407,7 +1408,7 @@
         subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(["1", "2"]), term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(["1", "2"]), target_years: JSON.stringify(["1", "2"]), term: '1', questions: questionsArray }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1456,9 +1457,10 @@
       localStorage.setItem("examSubjects", JSON.stringify(subjects));
       
       if (supabaseClient && targetSub) {
-        // ใช้คอลัมน์ target_year ให้ตรงกับฐานข้อมูลจริง
+        // ส่งบันทึกทั้งสองฟิลด์พร้อมกันเพื่อป้องกันปัญหาตารางสลับชื่อ
         const { error } = await supabaseClient.from("subjects").update({
-          target_year: JSON.stringify(selectedYears)
+          target_year: JSON.stringify(selectedYears),
+          target_years: JSON.stringify(selectedYears)
         }).eq("id", targetSub.id);
 
         if (error) {
