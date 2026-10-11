@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '58';
+    const CURRENT_VERSION = '59';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -318,7 +318,6 @@
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     th { color: #64748b; background: #f8fafc; font-weight: 500; }
     
-    /* บีบคอลัมน์วิชาสอบให้แคบลงเพื่อให้ตัดคำเป็นจุดไข่ปลาไวขึ้น (ประมาณความยาว 'งานไฟฟ้ายานยนต์') */
     #advisorScoreTableBody td:nth-child(1), #advisorPage th:nth-child(1) { width: 18%; }
     #advisorScoreTableBody td:nth-child(2), #advisorPage th:nth-child(2) { width: 30%; }
     #advisorScoreTableBody td:nth-child(3), #advisorPage th:nth-child(3) { width: 12%; }
@@ -608,9 +607,8 @@
               <div class="info-item" style="grid-column: span 2;">
                 <label for="newSubjectYear">กำหนดสำหรับชั้นปี</label>
                 <select id="newSubjectYear" required>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="Test">Test (ห้องพิเศษ)</option>
+                  <option value="1">ปี 1</option>
+                  <option value="2">ปี 2</option>
                 </select>
               </div>
             </div>
@@ -622,7 +620,7 @@
           <div class="table-wrap">
             <h3 class="section-title">รายวิชาสอบทั้งหมด</h3>
             <table>
-              <thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>ชั้นปี</th><th>จำนวนข้อ</th><th>จัดการ</th></tr></thead>
+              <thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>ชั้นปี</th><th>จำนวนข้อ</th><th>สถานะสอบ</th><th>จัดการ</th></tr></thead>
               <tbody id="subjectTableBody"></tbody>
             </table>
           </div>
@@ -740,12 +738,19 @@
 
         const { data: subData, error: subErr } = await supabaseClient.from("subjects").select("*");
         if (!subErr && subData && subData.length > 0) {
-          storedSubjects = subData.map(sub => ({
-            id: sub.id,
-            name: sub.name,
-            targetYear: sub.target_year,
-            questions: Array.isArray(sub.questions) ? sub.questions : (typeof sub.questions === 'string' ? JSON.parse(sub.questions) : [])
-          }));
+          storedSubjects = subData.map(sub => {
+            let parsedQ = [];
+            try {
+              parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
+            } catch(e) { parsedQ = []; }
+            return {
+              id: sub.id,
+              name: sub.name,
+              targetYear: sub.target_year,
+              isOpen: sub.is_open !== false, // ค่าเริ่มต้นเป็นเปิด ถ้าไม่มีฟิลด์นี้
+              questions: parsedQ
+            };
+          });
           localStorage.setItem("examSubjects", JSON.stringify(storedSubjects));
         }
 
@@ -972,15 +977,19 @@
       let filteredSubjects = [];
       const isTestClass = studentClass.trim().toLowerCase() === "test";
 
+      // กรองเฉพาะวิชาที่เปิดสอบ (isOpen !== false)
+      const activeSubjects = subjects.filter(sub => sub.isOpen !== false);
+
       if (isTestClass) {
-        filteredSubjects = subjects.filter(sub => String(sub.targetYear).trim().toLowerCase() === "test");
+        // ห้อง Test เห็นทุกวิชาที่เปิดสอบในระบบ
+        filteredSubjects = activeSubjects;
       } else {
         const studentYearNum = studentClass.split("/")[0];
-        filteredSubjects = subjects.filter(sub => String(sub.targetYear) === studentYearNum);
+        filteredSubjects = activeSubjects.filter(sub => String(sub.targetYear) === studentYearNum);
       }
 
       if (filteredSubjects.length === 0) {
-        container.innerHTML = `<p style="color: #64748b; text-align: center; margin: 10px 0;">ยังไม่มีวิชาสอบสำหรับห้อง ${studentClass}</p>`;
+        container.innerHTML = `<p style="color: #64748b; text-align: center; margin: 10px 0;">ยังไม่มีวิชาสอบที่เปิดสำหรับคุณในขณะนี้</p>`;
         return;
       }
 
@@ -1349,17 +1358,19 @@
       let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
 
       if (editId) {
-        subjects = subjects.map(sub => sub.id === editId ? { id: subjectCode, name: subjectName, targetYear, questions: questionsArray } : sub);
+        const existingSub = subjects.find(s => s.id === editId);
+        const isOpenStatus = existingSub ? (existingSub.isOpen !== false) : true;
+        subjects = subjects.map(sub => sub.id === editId ? { id: subjectCode, name: subjectName, targetYear, isOpen: isOpenStatus, questions: questionsArray } : sub);
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: targetYear, term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: targetYear, is_open: isOpenStatus, term: '1', questions: questionsArray }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
         if (subjects.some(sub => sub.id === subjectCode)) { alert("รหัสวิชานี้มีอยู่ในระบบแล้ว"); return; }
-        subjects.push({ id: subjectCode, name: subjectName, targetYear, questions: questionsArray });
+        subjects.push({ id: subjectCode, name: subjectName, targetYear, isOpen: true, questions: questionsArray });
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: targetYear, term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: targetYear, is_open: true, term: '1', questions: questionsArray }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1368,13 +1379,32 @@
       renderSubjectsTable();
     });
 
+    function toggleSubjectStatus(id) {
+      let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
+      let newStatus = true;
+      subjects = subjects.map(sub => {
+        if (sub.id === id) {
+          sub.isOpen = sub.isOpen === false ? true : false;
+          newStatus = sub.isOpen;
+        }
+        return sub;
+      });
+      localStorage.setItem("examSubjects", JSON.stringify(subjects));
+      if (supabaseClient) {
+        supabaseClient.from("subjects").update({ is_open: newStatus }).eq("id", id).then();
+      }
+      renderSubjectsTable();
+    }
+
     function renderSubjectsTable() {
       const tbody = document.getElementById("subjectTableBody");
       tbody.innerHTML = "";
       (JSON.parse(localStorage.getItem("examSubjects")) || []).forEach(sub => {
         const row = tbody.insertRow();
-        const yearDisplay = sub.targetYear === "Test" ? "Test (ห้องพิเศษ)" : `ปี ${sub.targetYear}`;
-        row.innerHTML = `<td>${sub.id}</td><td>${sub.name}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${yearDisplay}</span></td><td>${sub.questions.length} ข้อ</td><td><button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button><button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button></td>`;
+        const yearDisplay = `ปี ${sub.targetYear}`;
+        const isOpen = sub.isOpen !== false;
+        const statusBtn = `<button type="button" class="${isOpen ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleSubjectStatus('${sub.id}')">${isOpen ? '🟢 เปิดสอบ' : '🔴 ปิดสอบ'}</button>`;
+        row.innerHTML = `<td>${sub.id}</td><td>${sub.name}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${yearDisplay}</span></td><td>${sub.questions.length} ข้อ</td><td>${statusBtn}</td><td><button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button><button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button></td>`;
       });
     }
 
