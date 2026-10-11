@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '69';
+    const CURRENT_VERSION = '70';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -764,12 +764,18 @@
               parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
             } catch(e) { parsedQ = []; }
             
-            let years = sub.target_years;
-            if (!Array.isArray(years)) {
-              if (typeof years === 'string') {
-                try { years = JSON.parse(years); } catch(e) { years = [years]; }
-              } else {
-                years = sub.target_year ? [String(sub.target_year)] : ['1', '2'];
+            // อ่านค่าจาก target_year เดิม (แปลงเป็น array เพื่อใช้กับระบบติ๊กหลายช่อง)
+            let rawYear = sub.target_year;
+            let years = ["1", "2"];
+            if (rawYear) {
+              if (Array.isArray(rawYear)) {
+                years = rawYear;
+              } else if (typeof rawYear === 'string') {
+                try {
+                  years = JSON.parse(rawYear);
+                } catch(e) {
+                  years = rawYear.split(',').map(s => s.trim());
+                }
               }
             }
 
@@ -1392,7 +1398,7 @@
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: years, term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(years), term: '1', questions: questionsArray }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
@@ -1400,7 +1406,7 @@
         subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: ["1", "2"], term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(["1", "2"]), term: '1', questions: questionsArray }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1450,7 +1456,7 @@
       
       if (supabaseClient && targetSub) {
         const { error } = await supabaseClient.from("subjects").update({
-          target_years: selectedYears
+          target_year: JSON.stringify(selectedYears)
         }).eq("id", targetSub.id);
 
         if (error) {
