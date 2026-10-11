@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '52';
+    const CURRENT_VERSION = '53';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -588,7 +588,14 @@
             <div class="info-grid" style="margin-bottom: 20px;">
               <div class="info-item"><label for="newSubjectCode">รหัสวิชา</label><input id="newSubjectCode" type="text" placeholder="เช่น MATH101" required /></div>
               <div class="info-item"><label for="newSubjectName">ชื่อวิชา</label><input id="newSubjectName" type="text" placeholder="เช่น คณิตศาสตร์" required /></div>
-              <div class="info-item" style="grid-column: span 2;"><label for="newSubjectYear">กำหนดสำหรับชั้นปี</label><select id="newSubjectYear" required><option value="1">1</option><option value="2">2</option></select></div>
+              <div class="info-item" style="grid-column: span 2;">
+                <label for="newSubjectYear">กำหนดสำหรับชั้นปี</label>
+                <select id="newSubjectYear" required>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="Test">Test (ห้องพิเศษ)</option>
+                </select>
+              </div>
             </div>
             <h4 class="section-title" style="font-size: 16px; margin-bottom: 10px;">รายการคำถาม</h4>
             <div id="questionListContainer"></div>
@@ -940,10 +947,11 @@
       const isTestClass = studentClass.trim().toLowerCase() === "test";
 
       if (isTestClass) {
-        filteredSubjects = subjects;
+        // หากเป็นห้อง Test ให้แสดงเฉพาะวิชาที่ตั้งค่า targetYear เป็น Test เท่านั้น
+        filteredSubjects = subjects.filter(sub => String(sub.targetYear).trim().toLowerCase() === "test");
       } else {
         const studentYearNum = studentClass.split("/")[0];
-        filteredSubjects = subjects.filter(sub => sub.targetYear === studentYearNum);
+        filteredSubjects = subjects.filter(sub => String(sub.targetYear) === studentYearNum);
       }
 
       if (filteredSubjects.length === 0) {
@@ -1340,7 +1348,8 @@
       tbody.innerHTML = "";
       (JSON.parse(localStorage.getItem("examSubjects")) || []).forEach(sub => {
         const row = tbody.insertRow();
-        row.innerHTML = `<td>${sub.id}</td><td>${sub.name}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">ปี ${sub.targetYear}</span></td><td>${sub.questions.length} ข้อ</td><td><button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button><button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button></td>`;
+        const yearDisplay = sub.targetYear === "Test" ? "Test (ห้องพิเศษ)" : `ปี ${sub.targetYear}`;
+        row.innerHTML = `<td>${sub.id}</td><td>${sub.name}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${yearDisplay}</span></td><td>${sub.questions.length} ข้อ</td><td><button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button><button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button></td>`;
       });
     }
 
@@ -1494,7 +1503,7 @@
       if (savedStudentId && savedStudentName && savedStudentClass) {
         const found = (JSON.parse(localStorage.getItem("examStudents")) || []).find(s => s.id === savedStudentId && s.name === savedStudentName && s.studentClass === savedStudentClass);
         if (found && found.status !== false) {
-          loginAsStudent(found.id, found.name, found.studentClass);
+          loginAsSectionStudent = loginAsStudent(found.id, found.name, found.studentClass);
           return;
         }
       }
