@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '62';
+    const CURRENT_VERSION = '63';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -337,8 +337,6 @@
     .delete-button:hover { background: #ffe4e6; }
     .edit-button { border: 1px solid #bae6fd; background: #e0f2fe; color: #0369a1; margin-right: 5px; }
     .edit-button:hover { background: #bae6fd; }
-    .status-btn-yes { padding: 6px 14px; border: 1px solid #bbf7d0; border-radius: 8px; background: #f0fdf4; color: #16a34a; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
-    .status-btn-no { padding: 6px 14px; border: 1px solid #fecdd3; border-radius: 8px; background: #fff1f2; color: #e11d48; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
     .question-card { padding: 20px; border: 1px solid #cbd5e1; border-radius: 16px; background: #ffffff; margin-bottom: 20px; }
     .option-input-group { display: flex; align-items: center; gap: 10px; }
     .option-input-group input[type="radio"] { accent-color: #16a34a; width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; margin-top: 2px; }
@@ -612,7 +610,7 @@
           </form>
           <div class="table-wrap">
             <h3 class="section-title">รายวิชาสอบทั้งหมด</h3>
-            <p style="font-size: 13px; color: #64748b; margin-top: -10px; margin-bottom: 15px;">💡 เคล็ดลับ: คลิกที่ชื่อวิชา เพื่อเปิดการ์ดตั้งค่าชั้นปีที่ให้สอบหรือปิดสอบ</p>
+            <p style="font-size: 13px; color: #64748b; margin-top: -10px; margin-bottom: 15px;">💡 เคล็ดลับ: คลิกที่ชื่อวิชา เพื่อเปิดการ์ดตั้งค่าชั้นปีและเปิด/ปิดสอบ</p>
             <table>
               <thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>เปิดให้ชั้นปีสอบ</th><th>จำนวนข้อ</th><th>จัดการ</th></tr></thead>
               <tbody id="subjectTableBody"></tbody>
@@ -627,7 +625,7 @@
   <div id="subjectConfigModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 16px; box-sizing: border-box;">
     <div style="background: #ffffff; width: min(100%, 420px); border-radius: 22px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: fadeIn 0.2s ease;">
       <h3 id="modalSubName" style="margin: 0 0 6px; color: #1e3a8a; font-size: 18px;">ตั้งค่าวิชาสอบ</h3>
-      <p style="margin: 0 0 20px; color: #64748b; font-size: 13px;">เลือกชั้นปีที่อนุญาตให้เข้าสอบ หรือกดปิดสอบเพื่อซ่อนวิชานี้</p>
+      <p style="margin: 0 0 20px; color: #64748b; font-size: 13px;">เลือกชั้นปีที่อนุญาตให้เข้าสอบ หรือเลือกปิดสอบเพื่อซ่อนวิชานี้</p>
       
       <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
         <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer;">
@@ -641,6 +639,10 @@
         <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer;">
           <input type="checkbox" id="chkTest" style="width: 20px; height: 20px; accent-color: #2563eb;" />
           <span style="font-weight: 500; font-size: 15px;">Test (ห้องพิเศษ)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #fecdd3; border-radius: 12px; background: #fff1f2; cursor: pointer; margin-top: 6px;">
+          <input type="checkbox" id="chkCloseExam" style="width: 20px; height: 20px; accent-color: #e11d48;" />
+          <span style="font-weight: 500; font-size: 15px; color: #e11d48;">🔴 ปิดสอบ (ซ่อนวิชานี้ไม่ให้เด็กเห็น)</span>
         </label>
       </div>
 
@@ -766,7 +768,6 @@
               parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
             } catch(e) { parsedQ = []; }
             
-            // รองรับ targetYears เป็นอาเรย์ หรือแปลงจาก target_year เดิม
             let years = sub.target_years;
             if (!Array.isArray(years)) {
               years = sub.target_year ? [String(sub.target_year)] : ['1', '2'];
@@ -1007,7 +1008,6 @@
       const isTestClass = studentClass.trim().toLowerCase() === "test";
       const studentYearNum = studentClass.split("/")[0];
 
-      // กรองเฉพาะวิชาที่เปิดสอบ (isOpen !== false) และตรงกับเงื่อนไขชั้นปีที่ติ๊กไว้
       filteredSubjects = subjects.filter(sub => {
         if (sub.isOpen === false) return false;
         let years = sub.targetYears || [];
@@ -1400,7 +1400,6 @@
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
         if (subjects.some(sub => sub.id === subjectCode)) { alert("รหัสวิชานี้มีอยู่ในระบบแล้ว"); return; }
-        // ค่าเริ่มต้นเปิดให้ ปี 1 และ ปี 2 สอบ
         subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], isOpen: true, questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
@@ -1412,7 +1411,6 @@
       renderSubjectsTable();
     });
 
-    // ระบบเปิด Modal ตั้งค่าวิชาเมื่อคลิกที่ชื่อวิชา
     let editingSubjectId = null;
     function openSubjectModal(id) {
       editingSubjectId = id;
@@ -1424,6 +1422,7 @@
       document.getElementById("chkYear1").checked = years.includes("1");
       document.getElementById("chkYear2").checked = years.includes("2");
       document.getElementById("chkTest").checked = years.includes("Test");
+      document.getElementById("chkCloseExam").checked = (sub.isOpen === false);
 
       document.getElementById("subjectConfigModal").classList.remove("hidden");
     }
@@ -1439,6 +1438,9 @@
       if (document.getElementById("chkYear1").checked) selectedYears.push("1");
       if (document.getElementById("chkYear2").checked) selectedYears.push("2");
       if (document.getElementById("chkTest").checked) selectedYears.push("Test");
+      
+      const isClosed = document.getElementById("chkCloseExam").checked;
+      const newIsOpen = !isClosed;
 
       let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
       let targetSub = null;
@@ -1446,6 +1448,7 @@
       subjects = subjects.map(sub => {
         if (sub.id === editingSubjectId) {
           sub.targetYears = selectedYears;
+          sub.isOpen = newIsOpen;
           targetSub = sub;
         }
         return sub;
@@ -1457,7 +1460,7 @@
           id: targetSub.id,
           name: targetSub.name,
           target_years: selectedYears,
-          is_open: targetSub.isOpen !== false,
+          is_open: newIsOpen,
           term: '1',
           questions: targetSub.questions
         }).then();
@@ -1465,33 +1468,7 @@
 
       closeSubjectModal();
       renderSubjectsTable();
-      alert("บันทึกการตั้งค่าชั้นปีเรียบร้อยแล้ว!");
-    }
-
-    function toggleSubjectStatus(id) {
-      let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
-      let newStatus = true;
-      subjects = subjects.map(sub => {
-        if (sub.id === id) {
-          sub.isOpen = sub.isOpen === false ? true : false;
-          newStatus = sub.isOpen;
-        }
-        return sub;
-      });
-      localStorage.setItem("examSubjects", JSON.stringify(subjects));
-      
-      const targetSub = subjects.find(s => s.id === id);
-      if (supabaseClient && targetSub) {
-        supabaseClient.from("subjects").upsert({
-          id: targetSub.id,
-          name: targetSub.name,
-          target_years: targetSub.targetYears || ["1", "2"],
-          is_open: newStatus,
-          term: '1',
-          questions: targetSub.questions
-        }).then();
-      }
-      renderSubjectsTable();
+      alert("บันทึกการตั้งค่าเรียบร้อยแล้ว!");
     }
 
     function renderSubjectsTable() {
@@ -1500,19 +1477,23 @@
       (JSON.parse(localStorage.getItem("examSubjects")) || []).forEach(sub => {
         const row = tbody.insertRow();
         const years = sub.targetYears || [];
-        let yearBadges = years.length > 0 ? years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('') : '<span style="color: #94a3b8; font-size: 12px;">ไม่ได้เลือก</span>';
+        let yearBadges = '';
         
-        const isOpen = sub.isOpen !== false;
-        const statusBtn = `<button type="button" class="${isOpen ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleSubjectStatus('${sub.id}')">${isOpen ? '🟢 เปิดสอบ' : '🔴 ปิดสอบ'}</button>`;
+        if (sub.isOpen === false) {
+          yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">🔴 ปิดสอบ</span>`;
+        } else if (years.length > 0) {
+          yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('');
+        } else {
+          yearBadges = '<span style="color: #94a3b8; font-size: 12px;">ไม่ได้เลือก</span>';
+        }
         
         row.innerHTML = `
           <td>${sub.id}</td>
-          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่าชั้นปี">${sub.name} ⚙️</a></td>
+          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่า">${sub.name} ⚙️</a></td>
           <td>${yearBadges}</td>
           <td>${sub.questions.length} ข้อ</td>
           <td>
             <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-              ${statusBtn}
               <button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button>
               <button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button>
             </div>
