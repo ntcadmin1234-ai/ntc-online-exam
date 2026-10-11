@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '75';
+    const CURRENT_VERSION = '76';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1404,7 +1404,14 @@
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(years), target_years: JSON.stringify(years), term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ 
+            id: subjectCode, 
+            name: subjectName, 
+            target_year: JSON.stringify(years), 
+            target_years: JSON.stringify(years), 
+            term: '1', 
+            questions: JSON.stringify(questionsArray) 
+          }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
@@ -1412,7 +1419,14 @@
         subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_year: JSON.stringify(["1", "2"]), target_years: JSON.stringify(["1", "2"]), term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ 
+            id: subjectCode, 
+            name: subjectName, 
+            target_year: JSON.stringify(["1", "2"]), 
+            target_years: JSON.stringify(["1", "2"]), 
+            term: '1', 
+            questions: JSON.stringify(questionsArray) 
+          }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1659,7 +1673,10 @@
           return;
         }
       }
-      if (localStorage.getItem("adminLoggedIn") === "true") { showAdminPage("students"); return; }
+      if (localStorage.getItem("adminLoggedIn") === "true") { 
+        showAdminPage("subjects"); 
+        return; 
+      }
       if (localStorage.getItem("advisorLoggedIn") === "true") { showAdvisorPage(); return; }
       goToStudentMenu();
     });
