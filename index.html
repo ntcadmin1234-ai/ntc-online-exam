@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '63';
+    const CURRENT_VERSION = '64';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -610,7 +610,7 @@
           </form>
           <div class="table-wrap">
             <h3 class="section-title">รายวิชาสอบทั้งหมด</h3>
-            <p style="font-size: 13px; color: #64748b; margin-top: -10px; margin-bottom: 15px;">💡 เคล็ดลับ: คลิกที่ชื่อวิชา เพื่อเปิดการ์ดตั้งค่าชั้นปีและเปิด/ปิดสอบ</p>
+            <p style="font-size: 13px; color: #64748b; margin-top: -10px; margin-bottom: 15px;">💡 เคล็ดลับ: คลิกที่ชื่อวิชา เพื่อเปิดการ์ดตั้งค่าชั้นปีที่ให้เข้าสอบ</p>
             <table>
               <thead><tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>เปิดให้ชั้นปีสอบ</th><th>จำนวนข้อ</th><th>จัดการ</th></tr></thead>
               <tbody id="subjectTableBody"></tbody>
@@ -625,7 +625,7 @@
   <div id="subjectConfigModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; padding: 16px; box-sizing: border-box;">
     <div style="background: #ffffff; width: min(100%, 420px); border-radius: 22px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: fadeIn 0.2s ease;">
       <h3 id="modalSubName" style="margin: 0 0 6px; color: #1e3a8a; font-size: 18px;">ตั้งค่าวิชาสอบ</h3>
-      <p style="margin: 0 0 20px; color: #64748b; font-size: 13px;">เลือกชั้นปีที่อนุญาตให้เข้าสอบ หรือเลือกปิดสอบเพื่อซ่อนวิชานี้</p>
+      <p style="margin: 0 0 20px; color: #64748b; font-size: 13px;">เลือกชั้นปีที่อนุญาตให้เข้าสอบ (หากไม่เลือกเลย วิชาจะไม่แสดงให้เด็กเห็น)</p>
       
       <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
         <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer;">
@@ -639,10 +639,6 @@
         <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; cursor: pointer;">
           <input type="checkbox" id="chkTest" style="width: 20px; height: 20px; accent-color: #2563eb;" />
           <span style="font-weight: 500; font-size: 15px;">Test (ห้องพิเศษ)</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid #fecdd3; border-radius: 12px; background: #fff1f2; cursor: pointer; margin-top: 6px;">
-          <input type="checkbox" id="chkCloseExam" style="width: 20px; height: 20px; accent-color: #e11d48;" />
-          <span style="font-weight: 500; font-size: 15px; color: #e11d48;">🔴 ปิดสอบ (ซ่อนวิชานี้ไม่ให้เด็กเห็น)</span>
         </label>
       </div>
 
@@ -777,7 +773,6 @@
               id: sub.id,
               name: sub.name,
               targetYears: years,
-              isOpen: sub.is_open !== false,
               questions: parsedQ
             };
           });
@@ -1008,8 +1003,8 @@
       const isTestClass = studentClass.trim().toLowerCase() === "test";
       const studentYearNum = studentClass.split("/")[0];
 
+      // แสดงวิชาเฉพาะเมื่อมีการติ๊กเลือกชั้นปีนั้นๆ ไว้ (ถ้าไม่ติ๊กเลย จะไม่แสดง)
       filteredSubjects = subjects.filter(sub => {
-        if (sub.isOpen === false) return false;
         let years = sub.targetYears || [];
         if (isTestClass) {
           return years.includes("Test");
@@ -1389,21 +1384,20 @@
       if (editId) {
         const existingSub = subjects.find(s => s.id === editId);
         const years = existingSub ? existingSub.targetYears : ["1", "2"];
-        const isOpenStatus = existingSub ? (existingSub.isOpen !== false) : true;
         
-        subjects = subjects.map(sub => sub.id === editId ? { id: subjectCode, name: subjectName, targetYears: years, isOpen: isOpenStatus, questions: questionsArray } : sub);
+        subjects = subjects.map(sub => sub.id === editId ? { id: subjectCode, name: subjectName, targetYears: years, questions: questionsArray } : sub);
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: years, is_open: isOpenStatus, term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: years, term: '1', questions: questionsArray }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
         if (subjects.some(sub => sub.id === subjectCode)) { alert("รหัสวิชานี้มีอยู่ในระบบแล้ว"); return; }
-        subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], isOpen: true, questions: questionsArray });
+        subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: ["1", "2"], is_open: true, term: '1', questions: questionsArray }).then();
+          supabaseClient.from("subjects").upsert({ id: subjectCode, name: subjectName, target_years: ["1", "2"], term: '1', questions: questionsArray }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1422,7 +1416,6 @@
       document.getElementById("chkYear1").checked = years.includes("1");
       document.getElementById("chkYear2").checked = years.includes("2");
       document.getElementById("chkTest").checked = years.includes("Test");
-      document.getElementById("chkCloseExam").checked = (sub.isOpen === false);
 
       document.getElementById("subjectConfigModal").classList.remove("hidden");
     }
@@ -1438,9 +1431,6 @@
       if (document.getElementById("chkYear1").checked) selectedYears.push("1");
       if (document.getElementById("chkYear2").checked) selectedYears.push("2");
       if (document.getElementById("chkTest").checked) selectedYears.push("Test");
-      
-      const isClosed = document.getElementById("chkCloseExam").checked;
-      const newIsOpen = !isClosed;
 
       let subjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
       let targetSub = null;
@@ -1448,7 +1438,6 @@
       subjects = subjects.map(sub => {
         if (sub.id === editingSubjectId) {
           sub.targetYears = selectedYears;
-          sub.isOpen = newIsOpen;
           targetSub = sub;
         }
         return sub;
@@ -1460,7 +1449,6 @@
           id: targetSub.id,
           name: targetSub.name,
           target_years: selectedYears,
-          is_open: newIsOpen,
           term: '1',
           questions: targetSub.questions
         }).then();
@@ -1479,12 +1467,10 @@
         const years = sub.targetYears || [];
         let yearBadges = '';
         
-        if (sub.isOpen === false) {
-          yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">🔴 ปิดสอบ</span>`;
-        } else if (years.length > 0) {
-          yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('');
+        if (years.length === 0) {
+          yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">🔴 ไม่ได้เปิดสอบ (ซ่อนอยู่)</span>`;
         } else {
-          yearBadges = '<span style="color: #94a3b8; font-size: 12px;">ไม่ได้เลือก</span>';
+          yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('');
         }
         
         row.innerHTML = `
