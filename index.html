@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '64';
+    const CURRENT_VERSION = '65';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -766,7 +766,11 @@
             
             let years = sub.target_years;
             if (!Array.isArray(years)) {
-              years = sub.target_year ? [String(sub.target_year)] : ['1', '2'];
+              if (typeof years === 'string') {
+                try { years = JSON.parse(years); } catch(e) { years = [years]; }
+              } else {
+                years = sub.target_year ? [String(sub.target_year)] : ['1', '2'];
+              }
             }
 
             return {
@@ -1003,7 +1007,6 @@
       const isTestClass = studentClass.trim().toLowerCase() === "test";
       const studentYearNum = studentClass.split("/")[0];
 
-      // แสดงวิชาเฉพาะเมื่อมีการติ๊กเลือกชั้นปีนั้นๆ ไว้ (ถ้าไม่ติ๊กเลย จะไม่แสดง)
       filteredSubjects = subjects.filter(sub => {
         let years = sub.targetYears || [];
         if (isTestClass) {
