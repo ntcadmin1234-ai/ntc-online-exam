@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '68';
+    const CURRENT_VERSION = '69';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1481,7 +1481,7 @@
         
         row.innerHTML = `
           <td>${sub.id}</td>
-          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่า">${sub.name} ⚙️</a></td>
+          <td><a href="javascript:void(0)" onclick="openSubjectModal('${sub.id}')" style="color: #2563eb; text-decoration: none; font-weight: 500;" title="คลิกเพื่อตั้งค่า">${sub.name}</a></td>
           <td>${yearBadges}</td>
           <td>${sub.questions.length} ข้อ</td>
           <td>
