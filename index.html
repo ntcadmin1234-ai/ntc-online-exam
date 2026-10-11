@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '54';
+    const CURRENT_VERSION = '55';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -313,9 +313,17 @@
     }
     .admin-nav button:hover, .admin-nav button.active { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
     .table-wrap { margin-top: 28px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     th { color: #64748b; background: #f8fafc; font-weight: 500; }
+    .truncate-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 250px;
+      display: inline-block;
+      vertical-align: middle;
+    }
     .delete-button, .edit-button { padding: 6px 12px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; transition: 0.2s ease; }
     .delete-button { border: 1px solid #fecdd3; background: #fff1f2; color: #e11d48; }
     .delete-button:hover { background: #ffe4e6; }
@@ -728,7 +736,6 @@
         if (!scErr && scData && scData.length > 0) {
           storedScores = scData.map(sc => {
             const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
-            // ค้นหาชื่อวิชาปัจจุบันจาก subjectId หรือจากชื่อเดิมที่ตรงกัน
             const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
             const currentSubjectName = matchedSubject ? matchedSubject.name : sc.subject_name;
             return {
@@ -1064,7 +1071,7 @@
       }
       filtered.forEach(s => {
         const row = tbody.insertRow();
-        row.innerHTML = `<td>${s.studentId}</td><td>${s.name}</td><td>${s.studentClass}</td><td>${s.subjectName}</td><td><strong style="color: #2563eb;">${s.score}</strong></td>`;
+        row.innerHTML = `<td>${s.studentId}</td><td>${s.name}</td><td>${s.studentClass}</td><td><span class="truncate-text" title="${s.subjectName}">${s.subjectName}</span></td><td><strong style="color: #2563eb;">${s.score}</strong></td>`;
       });
     }
 
