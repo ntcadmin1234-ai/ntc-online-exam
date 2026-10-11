@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '59';
+    const CURRENT_VERSION = '60';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -747,7 +747,7 @@
               id: sub.id,
               name: sub.name,
               targetYear: sub.target_year,
-              isOpen: sub.is_open !== false, // ค่าเริ่มต้นเป็นเปิด ถ้าไม่มีฟิลด์นี้
+              isOpen: sub.is_open !== false,
               questions: parsedQ
             };
           });
@@ -981,7 +981,6 @@
       const activeSubjects = subjects.filter(sub => sub.isOpen !== false);
 
       if (isTestClass) {
-        // ห้อง Test เห็นทุกวิชาที่เปิดสอบในระบบ
         filteredSubjects = activeSubjects;
       } else {
         const studentYearNum = studentClass.split("/")[0];
@@ -1401,7 +1400,7 @@
       tbody.innerHTML = "";
       (JSON.parse(localStorage.getItem("examSubjects")) || []).forEach(sub => {
         const row = tbody.insertRow();
-        const yearDisplay = `ปี ${sub.targetYear}`;
+        const yearDisplay = sub.targetYear === "Test" ? "Test (ห้องพิเศษ)" : `ปี ${sub.targetYear}`;
         const isOpen = sub.isOpen !== false;
         const statusBtn = `<button type="button" class="${isOpen ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleSubjectStatus('${sub.id}')">${isOpen ? '🟢 เปิดสอบ' : '🔴 ปิดสอบ'}</button>`;
         row.innerHTML = `<td>${sub.id}</td><td>${sub.name}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${yearDisplay}</span></td><td>${sub.questions.length} ข้อ</td><td>${statusBtn}</td><td><button class="edit-button" type="button" onclick="editSubject('${sub.id}')">แก้ไข</button><button class="delete-button" type="button" onclick="deleteSubject('${sub.id}')">ลบ</button></td>`;
