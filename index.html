@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '70';
+    const CURRENT_VERSION = '71';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -764,7 +764,7 @@
               parsedQ = Array.isArray(sub.questions) ? sub.questions : JSON.parse(sub.questions || '[]');
             } catch(e) { parsedQ = []; }
             
-            // อ่านค่าจาก target_year เดิม (แปลงเป็น array เพื่อใช้กับระบบติ๊กหลายช่อง)
+            // อ่านค่าจาก target_year คอลัมน์เดี่ยวในฐานข้อมูล
             let rawYear = sub.target_year;
             let years = ["1", "2"];
             if (rawYear) {
