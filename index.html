@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '55';
+    const CURRENT_VERSION = '56';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -312,18 +312,27 @@
       background: #ffffff; color: #475569; font: inherit; font-size: 14px; cursor: pointer;
     }
     .admin-nav button:hover, .admin-nav button.active { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
+    
     .table-wrap { margin-top: 28px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     th { color: #64748b; background: #f8fafc; font-weight: 500; }
-    .truncate-text {
+    
+    /* กำหนดสัดส่วนคอลัมน์ในตารางที่ปรึกษาให้พอดีและบังคับตัดคำด้วยจุดไข่ปลา */
+    #advisorScoreTableBody td:nth-child(1), #advisorPage th:nth-child(1) { width: 15%; }
+    #advisorScoreTableBody td:nth-child(2), #advisorPage th:nth-child(2) { width: 25%; }
+    #advisorScoreTableBody td:nth-child(3), #advisorPage th:nth-child(3) { width: 12%; }
+    #advisorScoreTableBody td:nth-child(4), #advisorPage th:nth-child(4) { width: 33%; }
+    #advisorScoreTableBody td:nth-child(5), #advisorPage th:nth-child(5) { width: 15%; }
+
+    .truncate-subject {
+      display: block;
+      width: 100%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 250px;
-      display: inline-block;
-      vertical-align: middle;
     }
+
     .delete-button, .edit-button { padding: 6px 12px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; transition: 0.2s ease; }
     .delete-button { border: 1px solid #fecdd3; background: #fff1f2; color: #e11d48; }
     .delete-button:hover { background: #ffe4e6; }
@@ -660,7 +669,15 @@
         <div class="table-wrap">
           <h3 class="section-title">ตารางสรุปคะแนนนักเรียน</h3>
           <table>
-            <thead><tr><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ห้องเรียน</th><th>วิชาสอบ</th><th>คะแนนที่ได้</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="width: 15%;">รหัสนักเรียน</th>
+                <th style="width: 25%;">ชื่อ - นามสกุล</th>
+                <th style="width: 12%;">ห้องเรียน</th>
+                <th style="width: 33%;">วิชาสอบ</th>
+                <th style="width: 15%;">คะแนนที่ได้</th>
+              </tr>
+            </thead>
             <tbody id="advisorScoreTableBody"></tbody>
           </table>
         </div>
@@ -1071,7 +1088,7 @@
       }
       filtered.forEach(s => {
         const row = tbody.insertRow();
-        row.innerHTML = `<td>${s.studentId}</td><td>${s.name}</td><td>${s.studentClass}</td><td><span class="truncate-text" title="${s.subjectName}">${s.subjectName}</span></td><td><strong style="color: #2563eb;">${s.score}</strong></td>`;
+        row.innerHTML = `<td>${s.studentId}</td><td>${s.name}</td><td>${s.studentClass}</td><td><span class="truncate-subject" title="${s.subjectName}">${s.subjectName}</span></td><td><strong style="color: #2563eb;">${s.score}</strong></td>`;
       });
     }
 
