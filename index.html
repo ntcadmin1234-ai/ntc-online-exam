@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '91';
+    const CURRENT_VERSION = '92';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -313,7 +313,6 @@
     }
     .admin-nav button:hover, .admin-nav button.active { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
     
-    /* ปรับตารางให้ขยายเต็มที่ตามเนื้อหา ไม่มีกรอบเลื่อนย่อยข้างใน */
     .table-wrap { margin-top: 28px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
@@ -749,7 +748,7 @@
       let from = 0;
       while (true) {
         let query = supabaseClient.from(table).select("*").range(from, from + pageSize - 1);
-        if (orderColumn) query = query.order(orderColumn, { ascending: false });
+        if (orderColumn) query = query.order(orderColumn, { ascending: true }); // เรียงจากเก่าไปใหม่ เพื่อให้รายการใหม่ต่อท้าย
         const { data, error } = await query;
         if (error) {
           if (orderColumn) return fetchAllRows(table, null);
@@ -1216,7 +1215,7 @@
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
       students = students.filter(s => !(s.name.toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass));
-      students.unshift({ id: studentId, name: studentName, studentClass: studentClass, status: true });
+      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true }); // ต่อท้ายแถว
       localStorage.setItem("examStudents", JSON.stringify(students));
 
       event.target.reset();
@@ -1282,7 +1281,7 @@
           if (id && fullName) {
             const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
             students = students.filter(s => !(s.name.toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass));
-            students.unshift({ id: id, name: fullName, studentClass: studentClass, status: true });
+            students.push({ id: id, name: fullName, studentClass: studentClass, status: true }); // ต่อท้ายแถว
             newStudentsForSupabase.push({ 
               id: id, 
               name: fullName, 
