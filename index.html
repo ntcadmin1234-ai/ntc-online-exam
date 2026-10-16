@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '82';
+    const CURRENT_VERSION = '87';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1184,14 +1184,15 @@
       const studentClass = (studentYear.toLowerCase() === "test") ? "Test" : `${studentYear}/${studentRoom}`;
 
       if (supabaseClient) {
-        // ใช้คำสั่ง insert ตรงๆ และอัปเดตข้อมูลทันทีเพื่อให้บันทึกลง Supabase แบบถาวร
-        const { error } = await supabaseClient.from("students").upsert({ 
+        // ลบเฉพาะข้อมูลที่ชื่อและห้องตรงกันก่อน แล้วค่อยเพิ่มใหม่ รองรับรหัสซ้ำแต่คนละชื่อได้
+        await supabaseClient.from("students").delete().eq("name", studentName).eq("student_class", studentClass);
+        const { error } = await supabaseClient.from("students").insert({ 
           id: studentId, 
           name: studentName, 
           student_class: studentClass, 
           term1_status: true, 
           term2_status: true 
-        }, { onConflict: 'id' });
+        });
 
         if (error) {
           console.error("Supabase student save error:", error);
@@ -1201,7 +1202,7 @@
       }
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      students = students.filter(s => s.id !== studentId); // ป้องกันรหัสซ้ำค้างในแคช
+      students = students.filter(s => !(s.name.toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass));
       students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true });
       localStorage.setItem("examStudents", JSON.stringify(students));
 
@@ -1267,7 +1268,7 @@
 
           if (id && fullName) {
             const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
-            students = students.filter(s => s.id !== id);
+            students = students.filter(s => !(s.name.toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass));
             students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
             newStudentsForSupabase.push({ 
               id: id, 
@@ -1281,10 +1282,12 @@
         }
         localStorage.setItem("examStudents", JSON.stringify(students));
         if (supabaseClient && newStudentsForSupabase.length > 0) {
-          const { error } = await supabaseClient.from("students").upsert(newStudentsForSupabase, { onConflict: 'id' });
-          if (error) {
-            alert("เกิดข้อผิดพลาดในการบันทึก Excel ลง Supabase: " + error.message);
-            return;
+          for (let st of newStudentsForSupabase) {
+            await supabaseClient.from("students").delete().eq("name", st.name).eq("student_class", st.student_class);
+            const { error } = await supabaseClient.from("students").insert(st);
+            if (error) {
+              console.error("Excel import item error:", error);
+            }
           }
         }
         await syncDataFromSupabase();
@@ -1324,7 +1327,7 @@
       });
       localStorage.setItem("examStudents", JSON.stringify(students));
       if (supabaseClient) {
-        supabaseClient.from("students").update({ term1_status: updatedStatus, term2_status: updatedStatus }).eq("id", id).then();
+        supabaseClient.from("students").update({ term1_status: updatedStatus, term2_status: updatedStatus }).eq("name", name).eq("student_class", studentClass).then();
       }
       renderStudentsTable();
     }
@@ -1338,7 +1341,7 @@
         scores = scores.filter(s => !(s.studentId === id && s.name === name));
         localStorage.setItem("examScores", JSON.stringify(scores));
         if (supabaseClient) {
-          supabaseClient.from("students").delete().eq("id", id).then();
+          supabaseClient.from("students").delete().eq("name", name).eq("student_class", studentClass).then();
           supabaseClient.from("exam_scores").delete().eq("student_id", id).then();
         }
         renderStudentsTable();
@@ -1351,7 +1354,7 @@
         localStorage.setItem("examStudents", JSON.stringify([]));
         localStorage.setItem("examScores", JSON.stringify([]));
         if (supabaseClient) {
-          supabaseClient.from("students").delete().neq("id", "___dummy___").then();
+          supabaseClient.from("students").delete().neq("name", "___dummy___").then();
           supabaseClient.from("exam_scores").delete().neq("student_id", "___dummy___").then();
         }
         renderStudentsTable();
@@ -1429,14 +1432,16 @@
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
           if (editId !== subjectCode) supabaseClient.from("subjects").delete().eq("id", editId).then();
-          supabaseClient.from("subjects").upsert({ 
-            id: subjectCode, 
-            name: subjectName, 
-            target_year: JSON.stringify(years), 
-            target_years: JSON.stringify(years), 
-            term: '1', 
-            questions: JSON.stringify(questionsArray) 
-          }, { onConflict: 'id' }).then();
+          supabaseClient.from("subjects").delete().eq("id", subjectCode).then(() => {
+            supabaseClient.from("subjects").insert({ 
+              id: subjectCode, 
+              name: subjectName, 
+              target_year: JSON.stringify(years), 
+              target_years: JSON.stringify(years), 
+              term: '1', 
+              questions: JSON.stringify(questionsArray) 
+            }).then();
+          });
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
@@ -1444,14 +1449,16 @@
         subjects.push({ id: subjectCode, name: subjectName, targetYears: ["1", "2"], questions: questionsArray });
         localStorage.setItem("examSubjects", JSON.stringify(subjects));
         if (supabaseClient) {
-          supabaseClient.from("subjects").upsert({ 
-            id: subjectCode, 
-            name: subjectName, 
-            target_year: JSON.stringify(["1", "2"]), 
-            target_years: JSON.stringify(["1", "2"]), 
-            term: '1', 
-            questions: JSON.stringify(questionsArray) 
-          }, { onConflict: 'id' }).then();
+          supabaseClient.from("subjects").delete().eq("id", subjectCode).then(() => {
+            supabaseClient.from("subjects").insert({ 
+              id: subjectCode, 
+              name: subjectName, 
+              target_year: JSON.stringify(["1", "2"]), 
+              target_years: JSON.stringify(["1", "2"]), 
+              term: '1', 
+              questions: JSON.stringify(questionsArray) 
+            }).then();
+          });
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
@@ -1654,7 +1661,7 @@
         });
       }
       alert(`ส่งข้อสอบเรียบร้อยแล้ว!\nคะแนนที่คุณทำได้: ${scoreText}`);
-      loginAsStudent(studentId, name, studentClass);
+      loginAsTest(studentId, name, studentClass);
     }
 
     function confirmExitExam() {
