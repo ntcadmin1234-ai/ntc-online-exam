@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '79';
+    const CURRENT_VERSION = '80';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1093,7 +1093,10 @@
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
+      // จัดเรียงห้องเรียน โดยให้ "Test" ขึ้นมาก่อน ตามด้วยห้องอื่นๆ แบบตัวเลขเรียงลำดับ
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
+        if (!a) return 1;
+        if (!b) return -1;
         if (a.toLowerCase() === "test") return -1;
         if (b.toLowerCase() === "test") return 1;
         return a.localeCompare(b, 'th', { numeric: true });
