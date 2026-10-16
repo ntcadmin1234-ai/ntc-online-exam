@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '93';
+    const CURRENT_VERSION = '94';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -318,7 +318,6 @@
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     th { color: #64748b; background: #f8fafc; font-weight: 500; }
     
-    /* กำหนดสัดส่วนคอลัมน์ในตารางนักเรียนให้สวยงามพอดี */
     #studentTableBody td:nth-child(1), #studentsContent th:nth-child(1) { width: 8%; text-align: center; color: #64748b; }
     #studentTableBody td:nth-child(2), #studentsContent th:nth-child(2) { width: 22%; }
     #studentTableBody td:nth-child(3), #studentsContent th:nth-child(3) { width: 30%; }
@@ -1259,11 +1258,12 @@
 
       try {
         const rows = XLSX.utils.sheet_to_json(loadedWorkbook.Sheets[sheetName], { header: 1 });
-        let addedCount = 0, newStudentsForSupabase = [];
+        let addedCount = 0;
         let students = JSON.parse(localStorage.getItem("examStudents")) || [];
         const startIndex = startRowInput - 1;
         const endIndex = endRowInput !== "" ? Math.min(parseInt(endRowInput) - 1, rows.length - 1) : rows.length - 1;
 
+        // วนลูปทีละรายการแบบทีละแถว (Sequential) เพื่อป้องกันข้อมูลตีกันและบันทึกครบถ้วนไม่ตกหล่น
         for (let i = startIndex; i <= endIndex; i++) {
           if (i < 0 || i >= rows.length || !rows[i]) continue;
           const row = rows[i];
@@ -1274,28 +1274,28 @@
 
           if (id && fullName) {
             const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
+            
+            if (supabaseClient) {
+              await supabaseClient.from("students").delete().eq("name", fullName).eq("student_class", studentClass);
+              const { error } = await supabaseClient.from("students").insert({ 
+                id: id, 
+                name: fullName, 
+                student_class: studentClass, 
+                term1_status: true, 
+                term2_status: true 
+              });
+              if (error) {
+                console.error("Excel import item error:", error);
+              }
+            }
+
             students = students.filter(s => !(s.name.toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass));
             students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
-            newStudentsForSupabase.push({ 
-              id: id, 
-              name: fullName, 
-              student_class: studentClass, 
-              term1_status: true, 
-              term2_status: true 
-            });
             addedCount++;
           }
         }
         localStorage.setItem("examStudents", JSON.stringify(students));
-        if (supabaseClient && newStudentsForSupabase.length > 0) {
-          for (let st of newStudentsForSupabase) {
-            await supabaseClient.from("students").delete().eq("name", st.name).eq("student_class", st.student_class);
-            const { error } = await supabaseClient.from("students").insert(st);
-            if (error) {
-              console.error("Excel import item error:", error);
-            }
-          }
-        }
+        
         await syncDataFromSupabase();
         renderStudentsTable();
         alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${addedCount} คน และบันทึกลงฐานข้อมูลถาวรแล้ว!`);
