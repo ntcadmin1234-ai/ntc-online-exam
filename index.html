@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '89';
+    const CURRENT_VERSION = '90';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -582,7 +582,7 @@
             <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 12px 24px;">อัปโหลดและบันทึกรายชื่อ</button>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap;">
-            <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนทั้งหมด (เลื่อนดูได้ไม่จำกัด)</h3>
+            <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนทั้งหมด (แสดงครบทุกคน ไม่จำกัด)</h3>
             <button class="delete-button" type="button" onclick="deleteAllStudents()" style="padding: 8px 16px; font-weight: 500;">🗑️ ลบรายชื่อทั้งหมด</button>
           </div>
           <div style="margin-bottom: 20px;">
@@ -742,76 +742,90 @@
     let storedScores = JSON.parse(localStorage.getItem("examScores")) || [];
     let storedSubjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
 
+    // ฟังก์ชันดึงข้อมูลจาก Supabase ทีละ 1,000 แถวเพื่อ,ให้ดึงข้อมูลได้ครบถ้วนไม่จำกัด
+    async function fetchAllRows(table, orderColumn) {
+      const pageSize = 1000;
+      let allRows = [];
+      let from = 0;
+      while (true) {
+        let query = supabaseClient.from(table).select("*").range(from, from + pageSize - 1);
+        if (orderColumn) query = query.order(orderColumn, { ascending: false });
+        const { data, error } = await query;
+        if (error) {
+          if (orderColumn) return fetchAllRows(table, null);
+          throw error;
+        }
+        allRows = allRows.concat(data || []);
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      return allRows;
+    }
+
     async function syncDataFromSupabase() {
       if (!supabaseClient) return;
       try {
-        const { data: stdData, error: stdErr } = await supabaseClient.from("students").select("*");
-        if (!stdErr && stdData && Array.isArray(stdData)) {
-          storedStudents = stdData.map(s => ({
-            id: s.id ? String(s.id).trim() : "",
-            name: s.name ? String(s.name).trim() : "",
-            studentClass: s.student_class ? String(s.student_class).trim() : (s.class ? String(s.class).trim() : ""),
-            status: s.term1_status !== false && s.status !== false
-          }));
-          localStorage.setItem("examStudents", JSON.stringify(storedStudents));
-        }
+        const stdData = await fetchAllRows("students", "created_at");
+        storedStudents = stdData.map(s => ({
+          id: s.id ? String(s.id).trim() : "",
+          name: s.name ? String(s.name).trim() : "",
+          studentClass: s.student_class ? String(s.student_class).trim() : (s.class ? String(s.class).trim() : ""),
+          status: s.term1_status !== false && s.status !== false
+        }));
+        localStorage.setItem("examStudents", JSON.stringify(storedStudents));
 
-        const { data: subData, error: subErr } = await supabaseClient.from("subjects").select("*");
-        if (!subErr && subData && Array.isArray(subData)) {
-          storedSubjects = subData.map(sub => {
-            let parsedQ = [];
-            try {
-              if (Array.isArray(sub.questions)) {
-                parsedQ = sub.questions;
-              } else if (typeof sub.questions === 'string' && sub.questions.trim() !== '') {
-                parsedQ = JSON.parse(sub.questions);
-              }
-            } catch(e) { parsedQ = []; }
-            if (!Array.isArray(parsedQ)) parsedQ = [];
-            
-            let rawYear = sub.target_year !== undefined ? sub.target_year : sub.target_years;
-            let years = ["1", "2"];
-            if (rawYear !== null && rawYear !== undefined) {
-              if (Array.isArray(rawYear)) {
-                years = rawYear;
-              } else if (typeof rawYear === 'string' && rawYear.trim() !== '') {
-                try {
-                  years = JSON.parse(rawYear);
-                } catch(e) {
-                  years = rawYear.split(',').map(s => s.trim().replace(/"/g, '').replace(/[\[\]]/g, ''));
-                }
-              }
-            } else {
-              years = ["1", "2"];
+        const subData = await fetchAllRows("subjects", null);
+        storedSubjects = subData.map(sub => {
+          let parsedQ = [];
+          try {
+            if (Array.isArray(sub.questions)) {
+              parsedQ = sub.questions;
+            } else if (typeof sub.questions === 'string' && sub.questions.trim() !== '') {
+              parsedQ = JSON.parse(sub.questions);
             }
+          } catch(e) { parsedQ = []; }
+          if (!Array.isArray(parsedQ)) parsedQ = [];
+          
+          let rawYear = sub.target_year !== undefined ? sub.target_year : sub.target_years;
+          let years = ["1", "2"];
+          if (rawYear !== null && rawYear !== undefined) {
+            if (Array.isArray(rawYear)) {
+              years = rawYear;
+            } else if (typeof rawYear === 'string' && rawYear.trim() !== '') {
+              try {
+                years = JSON.parse(rawYear);
+              } catch(e) {
+                years = rawYear.split(',').map(s => s.trim().replace(/"/g, '').replace(/[\[\]]/g, ''));
+              }
+            }
+          } else {
+            years = ["1", "2"];
+          }
 
-            return {
-              id: sub.id ? String(sub.id).trim() : "",
-              name: sub.name ? String(sub.name).trim() : "",
-              targetYears: Array.isArray(years) ? years : ["1", "2"],
-              questions: parsedQ
-            };
-          });
-          localStorage.setItem("examSubjects", JSON.stringify(storedSubjects));
-        }
+          return {
+            id: sub.id ? String(sub.id).trim() : "",
+            name: sub.name ? String(sub.name).trim() : "",
+            targetYears: Array.isArray(years) ? years : ["1", "2"],
+            questions: parsedQ
+          };
+        });
+        localStorage.setItem("examSubjects", JSON.stringify(storedSubjects));
 
-        const { data: scData, error: scErr } = await supabaseClient.from("exam_scores").select("*");
-        if (!scErr && scData && Array.isArray(scData)) {
-          storedScores = scData.map(sc => {
-            const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
-            const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
-            const currentSubjectName = matchedSubject ? matchedSubject.name : (sc.subject_name || "-");
-            return {
-              studentId: sc.student_id || (matchedStudent ? matchedStudent.id : "-"),
-              name: sc.name || "",
-              studentClass: sc.student_class || sc.class || (matchedStudent ? matchedStudent.studentClass : "-"),
-              subjectId: sc.subject_id || (matchedSubject ? matchedSubject.id : "-"),
-              subjectName: currentSubjectName,
-              score: sc.score || "0"
-            };
-          });
-          localStorage.setItem("examScores", JSON.stringify(storedScores));
-        }
+        const scData = await fetchAllRows("exam_scores", "created_at");
+        storedScores = scData.map(sc => {
+          const matchedStudent = storedStudents.find(st => st.name === sc.name || st.id === sc.student_id);
+          const matchedSubject = storedSubjects.find(sb => sb.id === sc.subject_id || sb.name === sc.subject_name);
+          const currentSubjectName = matchedSubject ? matchedSubject.name : (sc.subject_name || "-");
+          return {
+            studentId: sc.student_id || (matchedStudent ? matchedStudent.id : "-"),
+            name: sc.name || "",
+            studentClass: sc.student_class || sc.class || (matchedStudent ? matchedStudent.studentClass : "-"),
+            subjectId: sc.subject_id || (matchedSubject ? matchedSubject.id : "-"),
+            subjectName: currentSubjectName,
+            score: sc.score || "0"
+          };
+        });
+        localStorage.setItem("examScores", JSON.stringify(storedScores));
 
         if (!adminPage.classList.contains("hidden")) {
           renderStudentsTable();
@@ -1302,7 +1316,6 @@
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       const searchQuery = document.getElementById("searchStudentInput").value.trim().toLowerCase();
       
-      // กรองข้อมูลตามคำค้นหา แสดงผลทั้งหมดแบบไม่จำกัดจำนวน
       const filtered = students.filter(s => s.id.toLowerCase().includes(searchQuery) || s.name.toLowerCase().includes(searchQuery));
 
       if (filtered.length === 0) {
