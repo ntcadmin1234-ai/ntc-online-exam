@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '80';
+    const CURRENT_VERSION = '81';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1022,7 +1022,7 @@
       filteredSubjects = subjects.filter(sub => {
         let years = sub.targetYears || [];
         if (isTestClass) {
-          return years.includes("Test");
+          return years.some(y => y.toLowerCase() === "test");
         } else {
           return years.includes(studentYearNum);
         }
@@ -1093,7 +1093,7 @@
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
-      // จัดเรียงห้องเรียน โดยให้ "Test" ขึ้นมาก่อน ตามด้วยห้องอื่นๆ แบบตัวเลขเรียงลำดับ
+      // จัดเรียงห้องเรียน โดยให้ "Test" (ไม่ว่าจะพิมพ์เล็กหรือใหญ่) ขึ้นมาก่อน ตามด้วยห้องอื่นๆ
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
         if (!a) return 1;
         if (!b) return -1;
@@ -1146,7 +1146,7 @@
 
     function handleYearChange(selectEl) {
       const roomInput = document.getElementById("newStudentRoom");
-      if (selectEl.value === "Test") {
+      if (selectEl.value.toLowerCase() === "test") {
         roomInput.value = "Test";
         roomInput.disabled = true;
         roomInput.style.background = "#e2e8f0";
@@ -1162,7 +1162,7 @@
     function handleExcelYearChange(selectEl) {
       const roomInput = document.getElementById("excelRoomInput");
       const roomLabel = document.getElementById("excelRoomLabel");
-      if (selectEl.value === "Test") {
+      if (selectEl.value.toLowerCase() === "test") {
         roomInput.value = "Test";
         roomInput.disabled = true;
         roomInput.style.background = "#e2e8f0";
@@ -1182,10 +1182,10 @@
       const studentYear = document.getElementById("newStudentYear").value;
       const studentRoom = document.getElementById("newStudentRoom").value.trim();
       
-      const studentClass = (studentYear === "Test") ? "Test" : `${studentYear}/${studentRoom}`;
+      const studentClass = (studentYear.toLowerCase() === "test") ? "Test" : `${studentYear}/${studentRoom}`;
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      if (students.some(s => s.name.trim().toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass)) {
+      if (students.some(s => s.name.trim().toLowerCase() === studentName.toLowerCase() && s.studentClass.toLowerCase() === studentClass.toLowerCase())) {
         alert("มีชื่อ-นามสกุลนี้อยู่ในห้องเดียวกันแล้ว");
         return;
       }
@@ -1267,8 +1267,8 @@
           const fullName = `${namePart} ${lastNamePart}`.trim();
 
           if (id && fullName) {
-            const studentClass = (targetYear === "Test") ? "Test" : `${targetYear}/${room}`;
-            if (!students.some(s => s.name.trim().toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass)) {
+            const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
+            if (!students.some(s => s.name.trim().toLowerCase() === fullName.toLowerCase() && s.studentClass.toLowerCase() === studentClass.toLowerCase())) {
               students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
               newStudentsForSupabase.push({ 
                 id: id, 
@@ -1467,7 +1467,7 @@
       const years = sub.targetYears || [];
       document.getElementById("chkYear1").checked = years.includes("1");
       document.getElementById("chkYear2").checked = years.includes("2");
-      document.getElementById("chkTest").checked = years.includes("Test");
+      document.getElementById("chkTest").checked = years.some(y => y.toLowerCase() === "test");
 
       document.getElementById("subjectConfigModal").classList.remove("hidden");
     }
@@ -1534,7 +1534,7 @@
         if (years.length === 0) {
           yearBadges = `<span style="padding: 2px 8px; border-radius: 6px; background: #fff1f2; color: #e11d48; font-size: 12px; font-weight: 500;">ปิด</span>`;
         } else {
-          yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y === 'Test' ? 'Test' : 'ปี ' + y}</span>`).join('');
+          yearBadges = years.map(y => `<span style="padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 12px; margin-right: 4px;">${y.toLowerCase() === 'test' ? 'Test' : 'ปี ' + y}</span>`).join('');
         }
         
         row.innerHTML = `
