@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '90';
+    const CURRENT_VERSION = '91';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -313,10 +313,11 @@
     }
     .admin-nav button:hover, .admin-nav button.active { border-color: #93c5fd; background: #eff6ff; color: #2563eb; }
     
-    .table-wrap { margin-top: 28px; overflow-x: auto; max-height: 600px; overflow-y: auto; }
+    /* ปรับตารางให้ขยายเต็มที่ตามเนื้อหา ไม่มีกรอบเลื่อนย่อยข้างใน */
+    .table-wrap { margin-top: 28px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
-    th { color: #64748b; background: #f8fafc; font-weight: 500; position: sticky; top: 0; z-index: 10; }
+    th { color: #64748b; background: #f8fafc; font-weight: 500; }
     
     #advisorScoreTableBody td:nth-child(1), #advisorPage th:nth-child(1) { width: 18%; }
     #advisorScoreTableBody td:nth-child(2), #advisorPage th:nth-child(2) { width: 30%; }
@@ -582,7 +583,7 @@
             <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 12px 24px;">อัปโหลดและบันทึกรายชื่อ</button>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap;">
-            <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนทั้งหมด (แสดงครบทุกคน ไม่จำกัด)</h3>
+            <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนทั้งหมด</h3>
             <button class="delete-button" type="button" onclick="deleteAllStudents()" style="padding: 8px 16px; font-weight: 500;">🗑️ ลบรายชื่อทั้งหมด</button>
           </div>
           <div style="margin-bottom: 20px;">
@@ -742,7 +743,6 @@
     let storedScores = JSON.parse(localStorage.getItem("examScores")) || [];
     let storedSubjects = JSON.parse(localStorage.getItem("examSubjects")) || [];
 
-    // ฟังก์ชันดึงข้อมูลจาก Supabase ทีละ 1,000 แถวเพื่อ,ให้ดึงข้อมูลได้ครบถ้วนไม่จำกัด
     async function fetchAllRows(table, orderColumn) {
       const pageSize = 1000;
       let allRows = [];
