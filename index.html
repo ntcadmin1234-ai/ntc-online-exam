@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '94';
+    const CURRENT_VERSION = '95';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -575,7 +575,7 @@
             <button class="primary-button" type="button" onclick="importExcelFile()" style="margin-top: 5px; width: auto; padding: 12px 24px;">อัปโหลดและบันทึกรายชื่อ</button>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 15px; flex-wrap: wrap;">
-            <h3 class="section-title" style="margin: 0;">รายชื่อนักเรียนทั้งหมด</h3>
+            <h3 class="section-title" id="studentTableTitle" style="margin: 0;">รายชื่อนักเรียนทั้งหมด</h3>
             <button class="delete-button" type="button" onclick="deleteAllStudents()" style="padding: 8px 16px; font-weight: 500;">🗑️ ลบรายชื่อทั้งหมด</button>
           </div>
           <div style="margin-bottom: 20px;">
@@ -1263,7 +1263,6 @@
         const startIndex = startRowInput - 1;
         const endIndex = endRowInput !== "" ? Math.min(parseInt(endRowInput) - 1, rows.length - 1) : rows.length - 1;
 
-        // วนลูปทีละรายการแบบทีละแถว (Sequential) เพื่อป้องกันข้อมูลตีกันและบันทึกครบถ้วนไม่ตกหล่น
         for (let i = startIndex; i <= endIndex; i++) {
           if (i < 0 || i >= rows.length || !rows[i]) continue;
           const row = rows[i];
@@ -1304,12 +1303,21 @@
 
     function renderStudentsTable() {
       const tbody = document.getElementById("studentTableBody");
+      const titleEl = document.getElementById("studentTableTitle");
       if (!tbody) return;
       tbody.innerHTML = "";
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       const searchQuery = document.getElementById("searchStudentInput").value.trim().toLowerCase();
       
       const filtered = students.filter(s => s.id.toLowerCase().includes(searchQuery) || s.name.toLowerCase().includes(searchQuery));
+
+      if (titleEl) {
+        if (searchQuery !== "") {
+          titleEl.textContent = `รายชื่อนักเรียนทั้งหมด (${filtered.length} จาก ${students.length} คน)`;
+        } else {
+          titleEl.textContent = `รายชื่อนักเรียนทั้งหมด (${students.length} คน)`;
+        }
+      }
 
       if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">ไม่พบรายชื่อนักเรียนในระบบ</td></tr>`;
