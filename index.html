@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '81';
+    const CURRENT_VERSION = '82';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -1093,7 +1093,6 @@
 
       const students = JSON.parse(localStorage.getItem("examStudents")) || [];
       
-      // จัดเรียงห้องเรียน โดยให้ "Test" (ไม่ว่าจะพิมพ์เล็กหรือใหญ่) ขึ้นมาก่อน ตามด้วยห้องอื่นๆ
       const sortedClasses = [...new Set(students.map(s => s.studentClass))].sort((a, b) => {
         if (!a) return 1;
         if (!b) return -1;
@@ -1184,35 +1183,35 @@
       
       const studentClass = (studentYear.toLowerCase() === "test") ? "Test" : `${studentYear}/${studentRoom}`;
 
-      let students = JSON.parse(localStorage.getItem("examStudents")) || [];
-      if (students.some(s => s.name.trim().toLowerCase() === studentName.toLowerCase() && s.studentClass.toLowerCase() === studentClass.toLowerCase())) {
-        alert("มีชื่อ-นามสกุลนี้อยู่ในห้องเดียวกันแล้ว");
-        return;
-      }
-
-      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true });
-      localStorage.setItem("examStudents", JSON.stringify(students));
-
       if (supabaseClient) {
+        // ใช้คำสั่ง insert ตรงๆ และอัปเดตข้อมูลทันทีเพื่อให้บันทึกลง Supabase แบบถาวร
         const { error } = await supabaseClient.from("students").upsert({ 
           id: studentId, 
           name: studentName, 
           student_class: studentClass, 
           term1_status: true, 
           term2_status: true 
-        });
+        }, { onConflict: 'id' });
+
         if (error) {
           console.error("Supabase student save error:", error);
           alert("บันทึกลงฐานข้อมูล Supabase ไม่สำเร็จ: " + error.message);
           return;
         }
       }
+
+      let students = JSON.parse(localStorage.getItem("examStudents")) || [];
+      students = students.filter(s => s.id !== studentId); // ป้องกันรหัสซ้ำค้างในแคช
+      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true });
+      localStorage.setItem("examStudents", JSON.stringify(students));
+
       event.target.reset();
       document.getElementById("newStudentRoom").disabled = false;
       document.getElementById("newStudentRoom").style.background = "#f8fafc";
+      
       await syncDataFromSupabase();
       renderStudentsTable();
-      alert("เพิ่มนักเรียนสำเร็จ!");
+      alert("เพิ่มนักเรียนสำเร็จและบันทึกลงฐานข้อมูลถาวรแล้ว!");
     });
 
     let loadedWorkbook = null;
@@ -1253,8 +1252,8 @@
 
       try {
         const rows = XLSX.utils.sheet_to_json(loadedWorkbook.Sheets[sheetName], { header: 1 });
-        let students = JSON.parse(localStorage.getItem("examStudents")) || [];
         let addedCount = 0, newStudentsForSupabase = [];
+        let students = JSON.parse(localStorage.getItem("examStudents")) || [];
         const startIndex = startRowInput - 1;
         const endIndex = endRowInput !== "" ? Math.min(parseInt(endRowInput) - 1, rows.length - 1) : rows.length - 1;
 
@@ -1268,26 +1267,29 @@
 
           if (id && fullName) {
             const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
-            if (!students.some(s => s.name.trim().toLowerCase() === fullName.toLowerCase() && s.studentClass.toLowerCase() === studentClass.toLowerCase())) {
-              students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
-              newStudentsForSupabase.push({ 
-                id: id, 
-                name: fullName, 
-                student_class: studentClass, 
-                term1_status: true, 
-                term2_status: true 
-              });
-              addedCount++;
-            }
+            students = students.filter(s => s.id !== id);
+            students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
+            newStudentsForSupabase.push({ 
+              id: id, 
+              name: fullName, 
+              student_class: studentClass, 
+              term1_status: true, 
+              term2_status: true 
+            });
+            addedCount++;
           }
         }
         localStorage.setItem("examStudents", JSON.stringify(students));
         if (supabaseClient && newStudentsForSupabase.length > 0) {
-          await supabaseClient.from("students").upsert(newStudentsForSupabase);
+          const { error } = await supabaseClient.from("students").upsert(newStudentsForSupabase, { onConflict: 'id' });
+          if (error) {
+            alert("เกิดข้อผิดพลาดในการบันทึก Excel ลง Supabase: " + error.message);
+            return;
+          }
         }
         await syncDataFromSupabase();
         renderStudentsTable();
-        alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${addedCount} คน!`);
+        alert(`นำเข้านักเรียนสำเร็จทั้งหมด ${addedCount} คน และบันทึกลงฐานข้อมูลถาวรแล้ว!`);
       } catch (err) { alert("เกิดข้อผิดพลาดในการประมวลผลข้อมูล"); console.error(err); }
     }
 
@@ -1434,7 +1436,7 @@
             target_years: JSON.stringify(years), 
             term: '1', 
             questions: JSON.stringify(questionsArray) 
-          }).then();
+          }, { onConflict: 'id' }).then();
         }
         alert("อัปเดตวิชาสอบเรียบร้อยแล้ว!");
       } else {
@@ -1449,7 +1451,7 @@
             target_years: JSON.stringify(["1", "2"]), 
             term: '1', 
             questions: JSON.stringify(questionsArray) 
-          }).then();
+          }, { onConflict: 'id' }).then();
         }
         alert("บันทึกวิชาสอบใหม่เรียบร้อยแล้ว!");
       }
