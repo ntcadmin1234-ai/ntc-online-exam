@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ระบบสอบออนไลน์ - วิทยาลัยเทคโนโลยีนนทบุรี</title>
   <script>
-    const CURRENT_VERSION = '92';
+    const CURRENT_VERSION = '93';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       const supabaseToken = localStorage.getItem('sb-rpiaifkzowzwgjeglody-auth-token');
       localStorage.clear();
@@ -318,19 +318,13 @@
     th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     th { color: #64748b; background: #f8fafc; font-weight: 500; }
     
-    #advisorScoreTableBody td:nth-child(1), #advisorPage th:nth-child(1) { width: 18%; }
-    #advisorScoreTableBody td:nth-child(2), #advisorPage th:nth-child(2) { width: 30%; }
-    #advisorScoreTableBody td:nth-child(3), #advisorPage th:nth-child(3) { width: 12%; }
-    #advisorScoreTableBody td:nth-child(4), #advisorPage th:nth-child(4) { width: 25%; }
-    #advisorScoreTableBody td:nth-child(5), #advisorPage th:nth-child(5) { width: 15%; }
-
-    .truncate-subject {
-      display: block;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    /* กำหนดสัดส่วนคอลัมน์ในตารางนักเรียนให้สวยงามพอดี */
+    #studentTableBody td:nth-child(1), #studentsContent th:nth-child(1) { width: 8%; text-align: center; color: #64748b; }
+    #studentTableBody td:nth-child(2), #studentsContent th:nth-child(2) { width: 22%; }
+    #studentTableBody td:nth-child(3), #studentsContent th:nth-child(3) { width: 30%; }
+    #studentTableBody td:nth-child(4), #studentsContent th:nth-child(4) { width: 16%; }
+    #studentTableBody td:nth-child(5), #studentsContent th:nth-child(5) { width: 14%; }
+    #studentTableBody td:nth-child(6), #studentsContent th:nth-child(6) { width: 10%; }
 
     .delete-button, .edit-button { padding: 6px 12px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; transition: 0.2s ease; }
     .delete-button { border: 1px solid #fecdd3; background: #fff1f2; color: #e11d48; }
@@ -590,7 +584,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ชั้นปี / ห้อง</th><th>สถานะ (สิทธิ์สอบ)</th><th>จัดการ</th></tr></thead>
+              <thead><tr><th>ลำดับ</th><th>รหัสนักเรียน</th><th>ชื่อ - นามสกุล</th><th>ชั้นปี / ห้อง</th><th>สถานะ (สิทธิ์สอบ)</th><th>จัดการ</th></tr></thead>
               <tbody id="studentTableBody"></tbody>
             </table>
           </div>
@@ -748,7 +742,7 @@
       let from = 0;
       while (true) {
         let query = supabaseClient.from(table).select("*").range(from, from + pageSize - 1);
-        if (orderColumn) query = query.order(orderColumn, { ascending: true }); // เรียงจากเก่าไปใหม่ เพื่อให้รายการใหม่ต่อท้าย
+        if (orderColumn) query = query.order(orderColumn, { ascending: true });
         const { data, error } = await query;
         if (error) {
           if (orderColumn) return fetchAllRows(table, null);
@@ -1215,7 +1209,7 @@
 
       let students = JSON.parse(localStorage.getItem("examStudents")) || [];
       students = students.filter(s => !(s.name.toLowerCase() === studentName.toLowerCase() && s.studentClass === studentClass));
-      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true }); // ต่อท้ายแถว
+      students.push({ id: studentId, name: studentName, studentClass: studentClass, status: true });
       localStorage.setItem("examStudents", JSON.stringify(students));
 
       event.target.reset();
@@ -1281,7 +1275,7 @@
           if (id && fullName) {
             const studentClass = (targetYear.toLowerCase() === "test") ? "Test" : `${targetYear}/${room}`;
             students = students.filter(s => !(s.name.toLowerCase() === fullName.toLowerCase() && s.studentClass === studentClass));
-            students.push({ id: id, name: fullName, studentClass: studentClass, status: true }); // ต่อท้ายแถว
+            students.push({ id: id, name: fullName, studentClass: studentClass, status: true });
             newStudentsForSupabase.push({ 
               id: id, 
               name: fullName, 
@@ -1318,14 +1312,20 @@
       const filtered = students.filter(s => s.id.toLowerCase().includes(searchQuery) || s.name.toLowerCase().includes(searchQuery));
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b;">ไม่พบรายชื่อนักเรียนในระบบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #64748b;">ไม่พบรายชื่อนักเรียนในระบบ</td></tr>`;
         return;
       }
 
-      filtered.forEach(s => {
+      filtered.forEach((s, index) => {
         const isEnabled = s.status !== false;
         const row = tbody.insertRow();
-        row.innerHTML = `<td>${s.id || '-'}</td><td>${s.name || '-'}</td><td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${s.studentClass || '-'}</span></td><td><button type="button" class="${isEnabled ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleStudentStatus('${s.id}', '${s.name}', '${s.studentClass}')">${isEnabled ? '✓ มีสิทธิ์สอบ' : '✕ ไม่มีสิทธิ์'}</button></td><td><button class="delete-button" type="button" onclick="deleteStudent('${s.id}', '${s.name}', '${s.studentClass}')">ลบ</button></td>`;
+        row.innerHTML = `
+          <td style="text-align: center; color: #64748b;">${index + 1}</td>
+          <td>${s.id || '-'}</td>
+          <td>${s.name || '-'}</td>
+          <td><span style="padding: 4px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; font-size: 13px;">${s.studentClass || '-'}</span></td>
+          <td><button type="button" class="${isEnabled ? 'status-btn-yes' : 'status-btn-no'}" onclick="toggleStudentStatus('${s.id}', '${s.name}', '${s.studentClass}')">${isEnabled ? '✓ มีสิทธิ์สอบ' : '✕ ไม่มีสิทธิ์'}</button></td>
+          <td><button class="delete-button" type="button" onclick="deleteStudent('${s.id}', '${s.name}', '${s.studentClass}')">ลบ</button></td>`;
       });
     }
 
